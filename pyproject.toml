@@ -1,0 +1,16 @@
+[project]
+name = "attackpath"
+version = "0.1.0"
+description = "Choke point analysis on hybrid on-prem/cloud attack graphs"
+requires-python = ">=3.13,<3.14"
+dependencies = ["networkx>=3.4", "numpy>=2.0", "scipy>=1.14", "pandas>=2.2", "matplotlib>=3.9"]
+
+[dependency-groups]
+dev = ["pytest>=8.3"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
