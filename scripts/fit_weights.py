@@ -22,7 +22,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import KFold, cross_val_predict, train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 
@@ -155,12 +155,70 @@ def residual_report(df_te, resid, pred_p):
     print(f"\nsd ratio across levels = {ratio:.2f}x "
           f"({'homoscedastic enough for one band' if ratio < 1.5 else 'HETEROSCEDASTIC -- one global band misstates uncertainty; perturb per metric level'})")
 
-    out = df_te[["cve", "published", "vector", "base_score", "epss"] + METRICS].copy()
-    out["pred_p"] = pred_p
+    # Contract read by attackpath/robustness.py -- do not rename these.
+    #   resid_logit = logit(epss_true) - logit(epss_pred)   (positive => the
+    #   fit UNDER-predicted, true exploitability is higher than CVSS suggests)
+    out = df_te[["cve", "published", "vector", "base_score"] + METRICS].copy()
+    out["epss_true"] = df_te.epss.to_numpy()
+    out["epss_pred"] = pred_p
     out["resid_logit"] = resid
+    out["resid_log"] = (np.log(np.clip(df_te.epss.to_numpy(), EPS, 1))
+                        - np.log(np.clip(pred_p, EPS, 1)))
     out.to_csv(os.path.join(OUT, "residuals.csv"), index=False)
-    print(f"per-CVE residuals -> {os.path.join(OUT, 'residuals.csv')}")
-    return by_level
+    # --- path-order preservation -------------------------------------------
+    # Rank correlation on EDGES does not imply correct PATH order: path cost is
+    # a SUM of -log p, and a monotone per-edge map can reverse it (two edges at
+    # p=.9 beat one at p=.8, but a map .9->.5/.8->.45 flips that). Order IS
+    # preserved exactly when the fit is a power law p_hat ~ p^k, because then
+    # -log p_hat = k(-log p) rescales every path cost by the same k.
+    # So the governing quantity is the spread of the LOG-space residual
+    #     r = log(p_true) - log(p_pred)
+    # not rho. With |r| <= delta on every edge, two paths keep their order
+    # whenever their true cost gap exceeds delta * (len(P) + len(Q)).
+    p_true = df_te.epss.to_numpy()
+    r_log = np.log(np.clip(p_true, EPS, 1)) - np.log(np.clip(pred_p, EPS, 1))
+    r_log -= np.median(r_log)          # a constant offset IS the power-law k
+    d50, d90 = np.percentile(np.abs(r_log), [50, 90])
+    print(f"\nlog-space residual after removing the constant (power-law) part:"
+          f"  p50={d50:.3f}  p90={d90:.3f} nats")
+
+    # Measure the perturbation magnitude for the edges that actually decide
+    # paths. Under w = -log p those are the upper-tail ones, so a pooled |r|
+    # misstates the band whenever the residuals are heteroscedastic -- and they
+    # are. Report the tail separately.
+    cut = np.percentile(p_true, 90)
+    bands = {"pooled": np.ones(len(r_log), bool),
+             "bottom 90%": p_true < cut,
+             "TOP EPSS DECILE": p_true >= cut}
+    print("  |r| by EPSS band (top-decile row governs shortest paths):")
+    tail50 = tail90 = None
+    for name, mask in bands.items():
+        if mask.sum() < 30:
+            continue
+        a = np.abs(r_log[mask])
+        q50, q90 = np.percentile(a, [50, 90])
+        print(f"    {name:18s} n={mask.sum():<6d} p50={q50:.3f}  p90={q90:.3f} nats")
+        if name.startswith("TOP"):
+            tail50, tail90 = q50, q90
+
+    print("  path-order resolution -- two paths keep their true order only if\n"
+          "  their cost gap (nats of -log p) exceeds delta*(lenP+lenQ):")
+    for L in (2, 4, 8):
+        line = (f"    paths of {L} edges each: gap must exceed "
+                f"{2*L*d50:.2f} (pooled p50) / {2*L*d90:.2f} (pooled p90) nats")
+        if tail50 is not None:
+            line += f"  | top decile: {2*L*tail50:.2f} / {2*L*tail90:.2f}"
+        print(line)
+    print("  NOTE: necessary condition only. exp 6 measures the real thing.")
+
+    cells = out.groupby("vector").size()
+    print(f"per-CVE residuals -> {os.path.join(OUT, 'residuals.csv')}  "
+          f"({len(out)} rows, {len(cells)} distinct vectors, "
+          f"median {cells.median():.0f}/vector, "
+          f"{(cells >= 10).sum()} vectors with >=10 residuals)")
+    return {"resid_log_abs_p50": float(d50), "resid_log_abs_p90": float(d90),
+            "resid_log_abs_p50_top_decile": None if tail50 is None else float(tail50),
+            "resid_log_abs_p90_top_decile": None if tail90 is None else float(tail90)}
 
 
 def main():
@@ -214,8 +272,9 @@ def main():
         evaluate("ols_8metrics", ols,
                  Xcat.iloc[idx_tr], y[idx_tr], Xcat.iloc[idx_te], y[idx_te], p_te),
         evaluate("gbm_8metrics",
-                 Pipeline([("p", onehot),
-                           ("m", HistGradientBoostingRegressor(random_state=SEED))]),
+                 results_models.setdefault("gbm_8metrics", Pipeline(
+                     [("p", onehot),
+                      ("m", HistGradientBoostingRegressor(random_state=SEED))])),
                  Xcat.iloc[idx_tr], y[idx_tr], Xcat.iloc[idx_te], y[idx_te], p_te),
     ]
 
@@ -245,11 +304,32 @@ def main():
                    for r in results}, fh, indent=2)
 
     best = max(results[:2], key=lambda r: r["r2_logit"])
-    residual_report(df.iloc[idx_te], *residuals[best["model"]])
 
+    # Out-of-fold residuals for EVERY row, not just the 25% holdout.
+    # robustness.py conditions the noise draw on the exact CVSS vector cell an
+    # edge sits in; a single holdout leaves most cells with too few residuals to
+    # do that, so 5-fold OOF gives 4x the density at the cost of 5 cheap fits.
+    # cross_val_predict clones the estimator, so passing the fitted one is safe.
+    print("\ncomputing out-of-fold residuals (5-fold) for the full sample...")
+    oof_logit = cross_val_predict(
+        results_models[best["model"]], Xcat, y,
+        cv=KFold(n_splits=5, shuffle=True, random_state=SEED))
+    band_stats = residual_report(df, y - oof_logit, sigmoid(oof_logit))
+
+    # Provenance: EPSS is re-scored daily, so a fit is only reproducible if the
+    # exact snapshot and page set are pinned alongside the seed.
+    raw = os.path.join(ROOT, "data", "raw")
+    epss_file = next((f for f in sorted(os.listdir(raw))
+                      if f.startswith("epss_scores-")), None)
+    n_pages = len([f for f in os.listdir(os.path.join(raw, "nvd"))
+                   if f.endswith(".json.gz")])
     verdict = {
         "n_rows": int(len(df)),
         "seed": SEED,
+        "epss_snapshot": epss_file,
+        "nvd_pages_cached": n_pages,
+        "joined_csv": os.path.basename(JOINED),
+        "published_range": [str(df.published.min()), str(df.published.max())],
         "best_cvss_only_model": best["model"],
         "r2_logit": best["r2_logit"],
         "r2_prob_top10pct": best["r2_prob_top10pct"],
@@ -259,9 +339,14 @@ def main():
         "perturbation_relative_p90": best["rel_err_p90"],
         "signed_rel_p05": best["signed_rel_p05"],
         "signed_rel_p95": best["signed_rel_p95"],
-        "resid_logit_skew": None,  # filled below
+        "resid_logit_skew": None,     # filled below
+        "resid_log_abs_p50": None,    # pooled perturbation magnitude
+        "resid_log_abs_p90": None,
+        "resid_log_abs_p50_top_decile": None,   # top-decile perturbation magnitude
+        "resid_log_abs_p90_top_decile": None,
     }
     verdict["resid_logit_skew"] = skew(residuals[best["model"]][0])
+    verdict.update(band_stats)
     with open(os.path.join(OUT, "fit_verdict.json"), "w") as fh:
         json.dump(verdict, fh, indent=2)
 

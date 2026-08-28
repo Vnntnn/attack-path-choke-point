@@ -64,6 +64,7 @@ def post_dominators(G: nx.DiGraph, entries, targets,
     Built on the reversed graph rooted at the sink, i.e. post-dominators of the
     virtual source.
     """
+    entries, targets = list(entries), list(targets)
     H = G.copy()
     H.add_edges_from((SUPER_SOURCE, e) for e in entries)
     H.add_edges_from((t, SUPER_SINK) for t in targets)
@@ -79,6 +80,7 @@ def pairwise_dominators(G: nx.DiGraph, entries, targets) -> dict:
 
     Unreachable pairs are absent from the dict -- never present as an empty set.
     """
+    entries, targets = list(entries), list(targets)
     out = {}
     for e, t in product(entries, targets):
         s = nodes_on_every_path(G, e, t)
@@ -119,18 +121,34 @@ def per_pair_chokepoints(G, entries, targets, include_endpoints=False) -> dict:
 
 # --- weighted min-cut over split nodes --------------------------------------
 
-def default_node_capacity(G: nx.DiGraph, v) -> float:
-    """How much attack flow a node can carry = its easiest way in.
-
-    max p over incoming edges. Interpreting the cut: the returned node set is
-    the bottleneck through which the LEAST attack probability flows. Entries
-    have no incoming edge and are made uncuttable by node_min_cut anyway.
-    """
+def prob_node_capacity(G: nx.DiGraph, v) -> float:
+    """max p over incoming edges -- the node's easiest way in, on the
+    probability scale. The cut is then the set through which the least attack
+    probability flows."""
     ps = [d.get("p", 0.0) for _, _, d in G.in_edges(v, data=True)]
     return max(ps) if ps else INF
 
 
-def node_min_cut(G: nx.DiGraph, entries, targets, capacity=None) -> set:
+def cost_node_capacity(G: nx.DiGraph, v) -> float:
+    """The same quantity on the -log p scale used everywhere else: the cheapest
+    way in, in attacker-cost units.
+
+    WARNING, and the reason this is not the default: a deterministic edge has
+    p=1 and therefore w=0, so any node the attacker reaches for free has
+    capacity 0 and can be cut for free. On graphs with structural edges the
+    minimum cut collapses to a zero-capacity set that is chosen arbitrarily
+    among the free nodes. Kept because comparing the two scales is a real
+    sensitivity, exp 1a reports both.
+    """
+    ws = [d.get("w", INF) for _, _, d in G.in_edges(v, data=True)]
+    return min(ws) if ws else INF
+
+
+CAPACITIES = {"prob": prob_node_capacity, "cost": cost_node_capacity}
+default_node_capacity = prob_node_capacity
+
+
+def node_min_cut(G: nx.DiGraph, entries, targets, capacity=None) -> set | None:
     """Minimum-weight NODE cut, via node splitting (v_in -> v_out).
 
     Node weight rides the internal edge; original edges get infinite capacity,
@@ -139,8 +157,15 @@ def node_min_cut(G: nx.DiGraph, entries, targets, capacity=None) -> set:
     targets are uncuttable (infinite internal capacity): a "fix" that deletes
     the crown jewel is not a defence.
     """
+    entries, targets = list(entries), list(targets)
     cap = capacity or default_node_capacity
     protected = set(entries) | set(targets)
+    # An entry wired straight to a target has no intermediate node to remove,
+    # so every source-sink path is all-infinite and no finite node cut exists.
+    # That is a different statement from "the cut is empty" and must not be
+    # merged with it -- exp 1a would read one as the other.
+    if any(G.has_edge(e, t) for e in entries for t in targets):
+        return None
     S = nx.DiGraph()
     for v in G.nodes:
         c = INF if v in protected else float(cap(G, v))
@@ -209,6 +234,7 @@ def delta_cost_scores(G: nx.DiGraph, entries, targets, weight="w") -> dict:
     Entries and targets score zero: removing them is not a defensive option.
     """
     base = _pair_costs(G, entries, targets, weight)
+    entries, targets = list(entries), list(targets)
     scores = {v: (0, 0.0, 0.0) for v in G.nodes}
     if not base:
         return scores
@@ -240,3 +266,27 @@ def rank_nodes(scores: dict) -> list:
 
 def top_k(scores: dict, k: int) -> list:
     return rank_nodes(scores)[:k]
+
+
+def rank_diagnostics(scores: dict, n_pairs_reachable: int, ks=(5, 10)) -> dict:
+    """Numbers that must accompany every Jaccard@k.
+
+    n_inf        nodes whose removal cuts EVERY reachable pair. Delta is
+                 infinite for all of them and identical, so the group has no
+                 internal order -- it is a set, not a ranking. When
+                 n_inf >= k, top-k is an arbitrary pick inside that set and
+                 Jaccard@k measures nothing for that graph.
+    n_tie_at_k   how many nodes share the score of the k-th ranked node, i.e.
+                 how much of the top-k boundary is decided by the node-id
+                 fallback rather than by the score.
+    """
+    out = {"n_inf": sum(1 for s in scores.values()
+                        if n_pairs_reachable and s[0] == n_pairs_reachable)}
+    order = rank_nodes(scores)
+    for k in ks:
+        if len(order) < k:
+            out[f"n_tie_at_{k}"] = None      # top-k does not exist; not "no ties"
+            continue
+        edge_score = scores[order[k - 1]]
+        out[f"n_tie_at_{k}"] = sum(1 for s in scores.values() if s == edge_score)
+    return out
