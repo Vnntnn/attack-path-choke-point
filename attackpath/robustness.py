@@ -48,35 +48,102 @@ def _norm_vector(vec: str | None) -> str:
     return "/".join(parts)
 
 
+MIN_CELL = 10        # below this a cell cannot support its own band
+N_BANDS = 5          # predicted-p quintiles
+
+
 class EmpiricalNoise:
-    """Resamples fit residuals in logit space, by vector cell when available."""
+    """Resamples fit residuals in logit space.
+
+    Draw order: the edge's exact CVSS vector cell when that cell has at least
+    MIN_CELL observations, else the residuals of edges with a similar PREDICTED
+    p, else the pooled distribution.
+
+    The middle step exists because pooling is biased, not merely coarse: the
+    measured residual spread is |r| p50 = 0.39 nats overall but 1.55 on the top
+    EPSS decile, and most fitted misconfig classes sit in thin cells. Falling
+    straight to pooled would perturb exactly the high-p edges that decide paths
+    under -log p at a quarter of their true spread, and exp 2 would report the
+    ranking as more stable than it is.
+
+    Known residual bias, for the limitations section: the fit's predictions are
+    compressed (predicted p tops out around 0.08 while true EPSS reaches 0.999),
+    so conditioning on predicted p recovers roughly 2.6x of the ~4.5x spread
+    variation. The empirical arm stays mildly optimistic in the tail.
+    """
 
     def __init__(self, path=RESID):
         self.pooled: list[float] = []
         self.by_cell: dict[str, list[float]] = {}
+        self.bands: list[tuple[float, list[float]]] = []
         if not os.path.exists(path):
             return
+        rows = []
         with open(path, newline="") as fh:
             for r in csv.DictReader(fh):
                 try:
                     e = float(r["resid_logit"])
                 except (KeyError, TypeError, ValueError):
                     continue
+                try:
+                    pred = float(r.get("epss_pred", "nan"))
+                except ValueError:
+                    pred = float("nan")
+                rows.append((pred, e))
                 self.pooled.append(e)
                 cell = _norm_vector(r.get("vector"))
                 if cell:
                     self.by_cell.setdefault(cell, []).append(e)
+        self._build_bands(sorted((p, e) for p, e in rows if p == p))
+
+    def _build_bands(self, known):
+        """Quantile bands over predicted p, split on VALUES not on positions.
+
+        Predicted p is discrete -- the fit maps a whole CVSS vector cell to one
+        number -- so a position-based split drops rows sharing a predicted p
+        into different bands and a lookup then returns whichever band happens to
+        come first. Boundaries are deduplicated so every tied row lands in the
+        same band.
+        """
+        if not known:
+            return
+        n = len(known)
+        edges, seen = [], set()
+        for i in range(N_BANDS):
+            hi = known[min(n - 1, (i + 1) * n // N_BANDS - 1)][0]
+            if hi not in seen:
+                seen.add(hi)
+                edges.append(hi)
+        edges[-1] = known[-1][0]
+        self.bands = [(hi, []) for hi in edges]
+        for p, e in known:
+            for hi, pool in self.bands:
+                if p <= hi:
+                    pool.append(e)
+                    break
+        # a band with a handful of rows is the thin-pool problem again
+        while len(self.bands) > 1 and len(self.bands[-1][1]) < MIN_CELL:
+            hi, tail = self.bands.pop()
+            self.bands[-1] = (hi, self.bands[-1][1] + tail)
+        self.bands = [(hi, pool) for hi, pool in self.bands if pool]
 
     @property
     def available(self) -> bool:
         return bool(self.pooled)
 
-    def draw(self, rng, cell: str | None = None, scale: float = 1.0) -> float:
-        """One residual. Cells with <10 observations fall back to pooled, so a
-        thin cell cannot fabricate a confident-looking narrow band."""
+    def _band(self, p: float | None) -> list[float]:
+        if p is None or not self.bands:
+            return self.pooled
+        for hi, pool in self.bands:
+            if p <= hi:
+                return pool
+        return self.bands[-1][1]
+
+    def draw(self, rng, cell: str | None = None, scale: float = 1.0,
+             pred_p: float | None = None) -> float:
         pool = self.by_cell.get(cell or "", [])
-        if len(pool) < 10:
-            pool = self.pooled
+        if len(pool) < MIN_CELL:
+            pool = self._band(pred_p)
         return scale * rng.choice(pool)
 
 
@@ -96,7 +163,7 @@ def perturb_weights(G, rng, *, noise_model: str, level: float,
                 raise RuntimeError("empirical noise requested, residuals.csv absent")
             cell = _norm_vector((d.get("p_input") or "").removeprefix("cvss:"))
             p_new = clamp(sigmoid(logit(min(p, 1 - 1e-9)) +
-                                  noise.draw(rng, cell, level)))
+                                  noise.draw(rng, cell, level, pred_p=p)))
         else:
             raise ValueError(f"unknown noise_model {noise_model!r}")
         d["p"], d["w"] = p_new, w(p_new)

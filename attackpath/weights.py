@@ -1,13 +1,14 @@
 """p(e) -> w(e) = -log p(e), and the four weight models compared in exp 4.
 
-Provenance rule (objective 2): every edge leaves here with
-`p`, `p_source` in {epss, fitted, deterministic, expert} and `p_input`
-naming the exact input used. An edge without those is a bug, not an edge.
+Provenance rule: every edge leaves here with `p`, `p_source` in {epss, fitted,
+deterministic, expert} and `p_input` naming the exact input used. An edge
+without those is a bug, not an edge.
 
-Reading of the result: Dijkstra over -log p gives the
-most-likely single path, i.e. a LOWER BOUND on attacker cost -- not
-P(compromise), because OR-semantics lets several paths compound.
+Reading of the result: Dijkstra over -log p gives the most-likely single
+path, i.e. a LOWER BOUND on attacker cost -- not P(compromise), because
+OR-semantics lets several paths compound.
 
+Kept simple on purpose: a dict of four small functions, no strategy classes.
 """
 from __future__ import annotations
 
@@ -70,7 +71,7 @@ class Catalog:
 
     @property
     def rubric(self) -> dict[str, str]:
-        """misconfig slug -> CVSS v3.1 vector string (docs/MISCONFIG_RUBRIC.md)."""
+        """misconfig slug -> CVSS v3.1 vector string, from the rubric's vector table."""
         if self._rubric is None:
             path = self._paths[2]
             self._rubric = json.load(open(path)) if os.path.exists(path) else {}
@@ -153,8 +154,27 @@ def _random_model(d, ctx, rng):
     return clamp(rng.random()), "expert", "random"
 
 
+def _fitted_model(d, ctx, rng):
+    """Every exploitable edge priced by the CVSS->EPSS fit, including CVE edges
+    whose true EPSS is known. Only used by exp 6: running it against the epss
+    model measures how far the fit's error moves the choke-point ranking, which
+    is the one thing Spearman rho cannot tell us (path cost is a SUM of -log p,
+    so a monotone per-edge map can still reorder paths)."""
+    if d["kind"] == "deterministic":
+        return _deterministic(d, ctx, rng)
+    if d["kind"] == "misconfig":
+        return _misconfig(d, ctx, rng, fallback=0.1)
+    row = ctx.cve.get(d["ref"])
+    vec = row.get("vector") if row else None
+    p = ctx.fitted_p(vec) if vec else None
+    if p is None:
+        return 0.01, "expert", f"prior:no-vector:{d['ref']}"
+    return p, "fitted", f"cvss:{vec}"
+
+
 WEIGHT_MODELS = {
     "epss": _epss_model,
+    "fitted": _fitted_model,
     "cvss": _cvss_model,
     "uniform": _uniform_model,
     "random": _random_model,

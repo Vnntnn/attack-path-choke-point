@@ -120,7 +120,7 @@ def generate(n: int, cross_density: str, segmentation: str, seed: int) -> nx.DiG
 
     G = new_graph(seed, n_requested=n, cross_density=cross_density,
                   segmentation=segmentation, synthetic_cves=synthetic,
-                  onprem_share=ONPREM_SHARE)
+                  onprem_share=ONPREM_SHARE, cve_pool_size=len(cves))
 
     # --- on-prem: privilege escalation, then lateral movement
     for h in hosts:
@@ -141,6 +141,20 @@ def generate(n: int, cross_density: str, segmentation: str, seed: int) -> nx.DiG
             else:  # same-zone reachability is a fact, not an exploit
                 k, ref = "deterministic", rng.choice(STRUCTURAL_LATERAL)
             add_edge(G, (h, "root"), (tgt, "user"), kind=k, ref=ref, domain="onprem")
+
+    # Segmented networks are not disconnected networks: each zone has one host
+    # allowed to reach the next zone (a jump host / management path). Without
+    # it, micro-segmentation only becomes reachable through repair edges, which
+    # is the repair covering for a generator that models segmentation wrongly.
+    for z, allowed in allow.items():
+        src_hosts = by_zone.get(z, [])
+        for z2 in allowed:
+            if z2 == z or not src_hosts or not by_zone.get(z2):
+                continue
+            jump, land = src_hosts[0], by_zone[z2][0]
+            if jump != land and not G.has_edge((jump, "root"), (land, "user")):
+                add_edge(G, (jump, "root"), (land, "user"), kind="deterministic",
+                         ref="sg-open-mgmt-port", domain="onprem")
 
     # --- cloud: assume-role chain, instance credentials, resource access
     for i, r in enumerate(roles):
