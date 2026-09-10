@@ -1,0 +1,5 @@
+src_resource,src_priv,dst_resource,dst_priv,kind,ref,domain,p,p_source,p_input
+internet,anon,s3://itis2026-lab-public-data,read,misconfig,s3-public-read,cloud,,,
+internet,anon,net:itis2026-lab-open-mgmt,reachable,deterministic,sg-open-mgmt-port,cloud,,,
+internet,anon,aws:999999999999,root,deterministic,attacker-controlled-account,cloud,,,
+aws:999999999999,root,role:itis2026-lab-cross-account-trust-role,admin,misconfig,iam-trust-missing-external-id,cross,,,
