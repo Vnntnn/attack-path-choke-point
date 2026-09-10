@@ -34,6 +34,7 @@ from .graph import add_edge, new_graph
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 JOINED = os.path.join(ROOT, "data", "fit", "cvss_epss_joined.csv")
 PARTIAL = os.path.join(ROOT, "data", "fit", "cvss_epss_partial.csv")
+RAW = os.path.join(ROOT, "data", "raw")
 
 # locked so pairwise_dominators cost cannot drift
 ENTRY_TARGET = {50: (3, 2), 200: (5, 3), 800: (8, 4)}
@@ -61,6 +62,19 @@ CROSS_CLASSES = [
 ]
 
 _CVES: list[str] | None = None
+_SNAPSHOT: str | None = None
+
+
+def _snapshot() -> str:
+    """Which EPSS snapshot the pool was drawn against. A re-scored snapshot
+    changes p(e) without changing the pool size, so the seed alone does not
+    reproduce a weighted graph -- the snapshot has to ride along with it."""
+    global _SNAPSHOT
+    if _SNAPSHOT is None:
+        files = (sorted(f for f in os.listdir(RAW) if f.startswith("epss_scores-"))
+                 if os.path.isdir(RAW) else [])
+        _SNAPSHOT = files[-1] if files else "none"
+    return _SNAPSHOT
 
 
 def _cve_pool() -> list[str]:
@@ -120,7 +134,8 @@ def generate(n: int, cross_density: str, segmentation: str, seed: int) -> nx.DiG
 
     G = new_graph(seed, n_requested=n, cross_density=cross_density,
                   segmentation=segmentation, synthetic_cves=synthetic,
-                  onprem_share=ONPREM_SHARE, cve_pool_size=len(cves))
+                  onprem_share=ONPREM_SHARE, cve_pool_size=len(cves),
+                  epss_snapshot=_snapshot())
 
     # --- on-prem: privilege escalation, then lateral movement
     for h in hosts:

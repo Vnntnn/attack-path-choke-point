@@ -190,6 +190,16 @@ def jaccard_at_k(rank_a: list, rank_b: list, k: int) -> float:
     return len(a & b) / len(a | b) if (a or b) else 1.0
 
 
+def jaccard_at_k_tie_aware(scores_a: dict, scores_b: dict, k: int) -> float:
+    """Jaccard over top-k-plus-boundary-ties (see chokepoints.top_k_set).
+
+    Report beside the plain Jaccard@k, never instead of it: the plain one is
+    what a practitioner reading a top-5 list actually gets, this one is what
+    the scores actually say.
+    """
+    return set_jaccard(cp.top_k_set(scores_a, k), cp.top_k_set(scores_b, k))
+
+
 def kendall_tau(scores_a: dict, scores_b: dict) -> float:
     """Over the shared node set, on the scalar collapse of the ranking score.
     Ties dominate on most graphs -- this is the secondary metric for a reason."""

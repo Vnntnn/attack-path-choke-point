@@ -56,11 +56,13 @@ EXTRA = {
     "exp1b": ["definition", "target", "set_size", "non_empty", "n_pairs_reachable",
               "n_pairs_total", "runtime_s"] + DIAG,
     "exp2": ["noise_model", "noise_level", "rep", "jaccard5", "jaccard10",
-             "kendall_tau", "global_set_jaccard"] + DIAG + DIAG_P,
+             "jaccard5_tie", "jaccard10_tie", "kendall_tau",
+             "global_set_jaccard"] + DIAG + DIAG_P,
     "exp3": ["drop_frac", "rep", "n_dropped", "pairs_reachable_before",
              "pairs_reachable_after", "jaccard5", "jaccard10",
-             "kendall_tau"] + DIAG + DIAG_P,
-    "exp4": ["model_a", "model_b", "jaccard5", "jaccard10", "kendall_tau",
+             "jaccard5_tie", "jaccard10_tie", "kendall_tau"] + DIAG + DIAG_P,
+    "exp4": ["model_a", "model_b", "jaccard5", "jaccard10", "jaccard5_tie",
+             "jaccard10_tie", "kendall_tau",
              "global_set_jaccard"] + ["n_inf_a", "n_inf_b",
              "n_tie_at_5_a", "n_tie_at_5_b", "n_tie_at_10_a", "n_tie_at_10_b"],
 }
@@ -166,6 +168,8 @@ def run_structure(args):
                     noise_model=nm, noise_level=lv, rep=r,
                     jaccard5=rb.jaccard_at_k(rank, rk, 5),
                     jaccard10=rb.jaccard_at_k(rank, rk, 10),
+                    jaccard5_tie=rb.jaccard_at_k_tie_aware(scores, sc, 5),
+                    jaccard10_tie=rb.jaccard_at_k_tie_aware(scores, sc, 10),
                     kendall_tau=rb.kendall_tau(scores, sc),
                     global_set_jaccard=rb.set_jaccard(
                         glob, cp.global_chokepoints(P, ent, tgt))))
@@ -185,6 +189,8 @@ def run_structure(args):
                     pairs_reachable_after=reach,
                     jaccard5=rb.jaccard_at_k(rank, cp.rank_nodes(sc), 5),
                     jaccard10=rb.jaccard_at_k(rank, cp.rank_nodes(sc), 10),
+                    jaccard5_tie=rb.jaccard_at_k_tie_aware(scores, sc, 5),
+                    jaccard10_tie=rb.jaccard_at_k_tie_aware(scores, sc, 10),
                     kendall_tau=rb.kendall_tau(scores, sc)))
 
     # --- exp 4: weight models against each other, same structure (paired)
@@ -198,6 +204,10 @@ def run_structure(args):
             n_tie_at_10_a=da["n_tie_at_10"], n_tie_at_10_b=db["n_tie_at_10"],
             jaccard5=rb.jaccard_at_k(ra, rb_, 5),
             jaccard10=rb.jaccard_at_k(ra, rb_, 10),
+            jaccard5_tie=rb.jaccard_at_k_tie_aware(per_model_scores[a],
+                                                   per_model_scores[b], 5),
+            jaccard10_tie=rb.jaccard_at_k_tie_aware(per_model_scores[a],
+                                                    per_model_scores[b], 10),
             kendall_tau=rb.kendall_tau(per_model_scores[a], per_model_scores[b]),
             global_set_jaccard=rb.set_jaccard(per_model_global[a],
                                               per_model_global[b])))

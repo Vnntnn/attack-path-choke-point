@@ -15,7 +15,8 @@ import time
 # Columns every row of every experiment must carry.
 COMMON = ["exp", "graph_id", "seed", "n_requested", "n_nodes", "n_edges",
           "n_entries", "n_targets", "cross_density", "segmentation",
-          "weight_model", "synthetic_cves", "git_rev", "ts"]
+          "weight_model", "synthetic_cves", "n_repair", "repair_frac",
+          "cve_pool_size", "epss_snapshot", "git_rev", "ts"]
 
 
 def git_rev() -> str:
@@ -35,7 +36,14 @@ def graph_row(G) -> dict:
             "cross_density": g.get("cross_density"),
             "segmentation": g.get("segmentation"),
             "weight_model": g.get("weight_model"),
-            "synthetic_cves": bool(g.get("synthetic_cves", False))}
+            "synthetic_cves": bool(g.get("synthetic_cves", False)),
+            # a repaired graph is not a draw from the declared distribution;
+            # a reader needs to know what share of the corpus that is
+            "n_repair": g.get("n_repair_edges"),
+            "repair_frac": (round(g["n_repair_edges"] / G.number_of_edges(), 4)
+                            if g.get("n_repair_edges") is not None else None),
+            "cve_pool_size": g.get("cve_pool_size"),
+            "epss_snapshot": g.get("epss_snapshot")}
 
 
 class Writer:

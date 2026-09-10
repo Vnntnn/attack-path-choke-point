@@ -105,3 +105,16 @@ def test_jaccard_at_k_edges():
     assert rb.jaccard_at_k([1, 2], [3, 4], 2) == 0.0
     assert rb.jaccard_at_k([], [], 5) == 1.0
     assert rb.jaccard_at_k([1, 2, 3], [3, 2, 1], 2) == pytest.approx(1 / 3)
+
+
+def test_tie_aware_jaccard_ignores_the_node_id_tie_break():
+    """Four nodes with identical scores: plain top-2 by node-id order is
+    identical before and after, even though the underlying scores changed.
+    The tie-aware set is not."""
+    from attackpath import chokepoints as cp
+    a = {("n", str(i)): (1, 3.0, 5.0) for i in range(4)}
+    a[("x", "0")] = (2, 0.0, 9.0)
+    b = dict(a)
+    b[("n", "3")] = (1, 0.0, 5.0)          # drops out of the tie, id-sort keeps it last either way
+    assert rb.jaccard_at_k(cp.rank_nodes(a), cp.rank_nodes(b), 2) == 1.0
+    assert rb.jaccard_at_k_tie_aware(a, b, 2) < 1.0

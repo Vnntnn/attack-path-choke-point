@@ -1,8 +1,8 @@
-"""Min-cut must come back as a NODE set (via node splitting).
+"""Min-cut must come back as a NODE set, via node splitting.
 
-An edge cut
-compared against a dominator set gives a number that looks fine and means
-nothing.
+This is the most breakable thing in the project: an edge cut compared
+against a dominator set gives a number that looks fine and means nothing --
+the two are in different units unless the graph is node-split first.
 """
 from attackpath import chokepoints as cp
 from tests.test_dominator import A, D, E1, E2, ENTRIES, TARGETS, T1, g6
@@ -111,3 +111,11 @@ def test_free_edges_make_the_cost_scale_degenerate():
     cut = cp.node_min_cut(G, e, t, cp.cost_node_capacity)
     assert sum(cp.cost_node_capacity(G, v) for v in cut) == 0.0
     assert cut == {("free", "r")}
+
+
+def test_unit_capacity_counts_nodes(monkeypatch):
+    """With unit capacity the cut value IS the number of nodes."""
+    G = g6()
+    cut = cp.node_min_cut(G, ENTRIES, TARGETS, cp.unit_node_capacity)
+    assert cut and len(cut) == 1          # a and d each cut everything alone
+    assert cut <= {A, D}

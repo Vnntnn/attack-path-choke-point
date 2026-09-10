@@ -87,7 +87,7 @@ def evaluate(name, model, Xtr, ytr, Xte, yte, p_te):
     }
 
 
-def export_coeffs(fitted):
+def export_coeffs(fitted, X_sample):
     """data/fit/fit_coeffs.json -- additive on the logit scale.
 
     Consumer contract (attackpath/weights.py):
@@ -106,8 +106,37 @@ def export_coeffs(fitted):
     for name, coef in zip(enc.get_feature_names_out(METRICS), lin.coef_):
         metric, level = name.split("_", 1)
         terms[f"{metric}:{abbr.get(level, level)}"] = float(coef)
+    # VERIFY the published contract end to end. Callers reconstruct p by summing
+    # terms; every metric reported above came from the pipeline's .predict()
+    # instead, so without this the JSON could disagree with the model and
+    # weights.py would compute a wrong p(e) for every misconfig edge.
+    # OneHotEncoder with no drop leaves the design rank-deficient, so lstsq
+    # returns one of many valid solutions -- reconstruction should still be
+    # exact, but "should" is not verified.
+    inv = {"AV": {"NETWORK": "N", "ADJACENT_NETWORK": "A", "LOCAL": "L",
+                  "PHYSICAL": "P"},
+           "AC": {"LOW": "L", "HIGH": "H"},
+           "PR": {"NONE": "N", "LOW": "L", "HIGH": "H"},
+           "UI": {"NONE": "N", "REQUIRED": "R"},
+           "S": {"UNCHANGED": "U", "CHANGED": "C"},
+           "C": {"NONE": "N", "LOW": "L", "HIGH": "H"},
+           "I": {"NONE": "N", "LOW": "L", "HIGH": "H"},
+           "A": {"NONE": "N", "LOW": "L", "HIGH": "H"}}
+    smp = X_sample.head(500)
+    manual = np.array([
+        float(lin.intercept_) + sum(terms[f"{m}:{inv[m][row[m]]}"] for m in METRICS)
+        for _, row in smp.iterrows()])
+    direct = fitted.predict(smp)
+    gap = float(np.max(np.abs(manual - direct)))
+    assert gap < 1e-6, (
+        f"fit_coeffs.json does not reproduce the model: max gap {gap:.2e}. "
+        f"Downstream p(e) would be wrong for every fitted edge.")
+    print(f"coeffs contract verified on {len(smp)} rows (max gap {gap:.2e})")
+
     payload = {"intercept": float(lin.intercept_), "terms": terms,
-               "scale": "logit", "cvss_version": "3.x", "seed": SEED}
+               "scale": "logit", "cvss_version": "3.x", "seed": SEED,
+               "contract": "p = 1/(1+exp(-(intercept + sum of the 8 selected terms)))",
+               "verified_max_abs_gap": gap}
     with open(os.path.join(OUT, "fit_coeffs.json"), "w") as fh:
         json.dump(payload, fh, indent=2, sort_keys=True)
     print(f"coeffs -> fit_coeffs.json ({len(terms)} terms, additive on logit)")
@@ -158,7 +187,10 @@ def residual_report(df_te, resid, pred_p):
     # Contract read by attackpath/robustness.py -- do not rename these.
     #   resid_logit = logit(epss_true) - logit(epss_pred)   (positive => the
     #   fit UNDER-predicted, true exploitability is higher than CVSS suggests)
-    out = df_te[["cve", "published", "vector", "base_score"] + METRICS].copy()
+    keep = ["cve", "published", "vector", "base_score"]
+    if "nvd_page" in df_te:
+        keep.insert(2, "nvd_page")
+    out = df_te[keep + METRICS].copy()
     out["epss_true"] = df_te.epss.to_numpy()
     out["epss_pred"] = pred_p
     out["resid_logit"] = resid
@@ -210,6 +242,29 @@ def residual_report(df_te, resid, pred_p):
             line += f"  | top decile: {2*L*tail50:.2f} / {2*L*tail90:.2f}"
         print(line)
     print("  NOTE: necessary condition only. exp 6 measures the real thing.")
+
+    # Cluster check. NVD is CVE-ID ordered, so each page is a narrow publication
+    # window and --stride 6 samples ~33 of 192 windows: this is a CLUSTER sample
+    # of windows, not a representative draw of 2017-2026. Which CVEs land in the
+    # top EPSS decile is time-correlated (one window holding a mass-exploited
+    # family drags the tail), so the top-decile point estimate needs its
+    # between-page spread reported next to it.
+    if "nvd_page" in df_te:
+        per = []
+        for pg, g in df_te.assign(_r=np.abs(r_log)).groupby("nvd_page"):
+            tail_g = g[g.epss >= cut]
+            if len(tail_g) >= 30:
+                per.append(tail_g._r.median())
+        if len(per) >= 5:
+            per = np.array(per)
+            print(f"  top-decile |r| p50 ACROSS {len(per)} NVD pages: "
+                  f"min={per.min():.3f} p25={np.percentile(per,25):.3f} "
+                  f"median={np.median(per):.3f} p75={np.percentile(per,75):.3f} "
+                  f"max={per.max():.3f}")
+            se = per.std(ddof=1) / np.sqrt(len(per))
+            print(f"  between-page sd={per.std(ddof=1):.3f}  cluster SE of the "
+                  f"mean={se:.3f}  => report 1.79 +/- {1.96*se:.2f}, not a bare "
+                  f"point estimate")
 
     cells = out.groupby("vector").size()
     print(f"per-CVE residuals -> {os.path.join(OUT, 'residuals.csv')}  "
@@ -294,7 +349,7 @@ def main():
 
     residuals = {r["model"]: (r.pop("_resid_logit"), r.pop("_pred_p"))
                  for r in results}
-    export_coeffs(results_models["ols_8metrics"])
+    export_coeffs(results_models["ols_8metrics"], Xcat)
     res = pd.DataFrame(results)
     pd.set_option("display.width", 200)
     print("\n" + res.to_string(index=False))

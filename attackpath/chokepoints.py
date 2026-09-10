@@ -144,7 +144,19 @@ def cost_node_capacity(G: nx.DiGraph, v) -> float:
     return min(ws) if ws else INF
 
 
-CAPACITIES = {"prob": prob_node_capacity, "cost": cost_node_capacity}
+def unit_node_capacity(G: nx.DiGraph, v) -> float:
+    """1 per node: the minimum NUMBER of nodes that must be removed.
+
+    The control for objective 3. A dominator set reads no weights at all,
+    so comparing it against a weighted cut mixes two differences -- different
+    method and different weights -- into one disagreement number. The
+    unit-capacity cut is the only one whose units match the dominator set's.
+    """
+    return 1.0
+
+
+CAPACITIES = {"prob": prob_node_capacity, "cost": cost_node_capacity,
+              "unit": unit_node_capacity}
 default_node_capacity = prob_node_capacity
 
 
@@ -266,6 +278,24 @@ def rank_nodes(scores: dict) -> list:
 
 def top_k(scores: dict, k: int) -> list:
     return rank_nodes(scores)[:k]
+
+
+def top_k_set(scores: dict, k: int) -> set:
+    """Top-k plus everyone tied with the k-th node's score.
+
+    Serial structure makes exact ties routine, not exceptional: every node on a
+    chain that all attack paths traverse cuts the same pairs at the same cost,
+    so an assume-role chain of four is four identical scores. Plain top-k then
+    slices that group by node id, and a Jaccard@k computed on it compares two
+    arbitrary picks -- it comes out 1.0 whenever the tie-break is deterministic,
+    which reads as stability and is not. This set is the honest comparison
+    unit: it changes only when the SCORES change.
+    """
+    order = rank_nodes(scores)
+    if len(order) <= k:
+        return set(order)
+    boundary = scores[order[k - 1]]
+    return set(order[:k]) | {v for v, sc in scores.items() if sc == boundary}
 
 
 def rank_diagnostics(scores: dict, n_pairs_reachable: int, ks=(5, 10)) -> dict:

@@ -30,7 +30,8 @@ from attackpath import robustness as rb
 from attackpath import weights as wt
 from experiments.run import BASE_SEED, CROSS, SEG
 
-EXTRA = ["jaccard5", "jaccard10", "kendall_tau", "global_set_jaccard",
+EXTRA = ["jaccard5", "jaccard10", "jaccard5_tie", "jaccard10_tie",
+         "kendall_tau", "global_set_jaccard",
          "cheapest_cost_epss", "cheapest_cost_fitted", "cost_ratio",
          "log_resid_sd", "top_path_same", "n_cve_edges", "n_edges_fitted",
          "n_inf_epss", "n_inf_fitted", "n_tie_at_5_epss", "n_tie_at_5_fitted"]
@@ -74,6 +75,8 @@ def run(n, cross, seg, seed, cat):
                weight_model="epss|fitted",
                jaccard5=rb.jaccard_at_k(cp.rank_nodes(sa), cp.rank_nodes(sb), 5),
                jaccard10=rb.jaccard_at_k(cp.rank_nodes(sa), cp.rank_nodes(sb), 10),
+               jaccard5_tie=rb.jaccard_at_k_tie_aware(sa, sb, 5),
+               jaccard10_tie=rb.jaccard_at_k_tie_aware(sa, sb, 10),
                kendall_tau=rb.kendall_tau(sa, sb),
                global_set_jaccard=rb.set_jaccard(
                    cp.global_chokepoints(a, ent, tgt),
