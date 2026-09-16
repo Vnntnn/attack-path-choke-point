@@ -1,5 +1,5 @@
 INFO:cartography.sync:Using the pure-Python Bolt codec. Installing cartography[neo4j-rust] pulls in neo4j-rust-ext, which speeds up talking to Neo4j.
-INFO:cartography.sync:Starting sync with update tag '1789022396'
+INFO:cartography.sync:Starting sync with update tag '1789032314'
 INFO:cartography.sync:Starting sync stage 'aws'
 INFO:cartography.intel.aws:Syncing AWS accounts: 000000000000
 INFO:cartography.client.core.tx:Loaded 1 AWSAccount nodes
@@ -21,6 +21,9 @@ WARNING:cartography.intel.aws:Module 's3' is requested without its dependencies 
 INFO:cartography.intel.aws.iam:Syncing IAM for account '000000000000'.
 INFO:cartography.client.core.tx:Loaded 1 AWSRootPrincipal nodes
 INFO:cartography.intel.aws.iam:Syncing IAM users for account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSUser nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSInlinePolicy nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSPolicyStatement nodes
 INFO:cartography.intel.aws.iam:Syncing IAM MFA Devices for account '000000000000'.
 INFO:cartography.intel.aws.iam:Syncing IAM groups for account '000000000000'.
 INFO:cartography.intel.aws.iam:Syncing IAM roles for account '000000000000'.
@@ -37,7 +40,7 @@ WARNING:neo4j.notifications:Received notification from DBMS server: <GqlStatusOb
 WARNING:neo4j.notifications:Received notification from DBMS server: <GqlStatusObject gql_status='01N50', status_description='warn: label does not exist. The label `AWSFederatedPrincipal` does not exist. Verify that the spelling is correct.', position=<SummaryInputPosition line=5, column=20, offset=213>, raw_classification='UNRECOGNIZED', classification=<NotificationClassification.UNRECOGNIZED: 'UNRECOGNIZED'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'UNRECOGNIZED', '_severity': 'WARNING', '_position': {'offset': 213, 'line': 5, 'column': 20}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n    MATCH (:AWSAccount{id:$AccountId})-[:RESOURCE]->(target:AWSRole)-[:TRUSTS_AWS_PRINCIPAL]->(source:AWSPrincipal)\n    WHERE NOT source:AWSRootPrincipal\n    AND NOT source:AWSServicePrincipal\n    AND NOT source:AWSFederatedPrincipal\n    RETURN target.arn AS target_arn, source.arn AS source_arn\n    '
 INFO:cartography.graph.statement:Completed STS_ASSUMEROLE_ALLOW statement #1
 INFO:cartography.intel.aws.iam:Syncing IAM user access keys for account '000000000000'.
-WARNING:neo4j.notifications:Received notification from DBMS server: <GqlStatusObject gql_status='01N50', status_description='warn: label does not exist. The label `AWSUser` does not exist. Verify that the spelling is correct.', position=<SummaryInputPosition line=1, column=13, offset=12>, raw_classification='UNRECOGNIZED', classification=<NotificationClassification.UNRECOGNIZED: 'UNRECOGNIZED'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'UNRECOGNIZED', '_severity': 'WARNING', '_position': {'offset': 12, 'line': 1, 'column': 13}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: 'MATCH (user:AWSUser)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID}) RETURN user.name as name, user.arn as arn'
+INFO:cartography.client.core.tx:Loaded 1 AWSAccountAccessKey nodes
 INFO:cartography.graph.statement:Completed AWSAccountAccessKey statement #1
 INFO:cartography.graph.statement:Completed AWSAccountAccessKey statement #2
 INFO:cartography.graph.statement:Completed AWSAccountAccessKey statement #3
@@ -45,6 +48,8 @@ INFO:cartography.graph.statement:Completed AWSAccountAccessKey statement #4
 INFO:cartography.intel.aws.iam:Syncing IAM Server Certificates for account '000000000000'.
 INFO:cartography.intel.aws.iam:Syncing IAM Account Summary for account '000000000000'.
 INFO:cartography.client.core.tx:Loaded 1 AWSAccount nodes
+INFO:cartography.graph.statement:Completed AWSPolicyStatement statement #1
+INFO:cartography.graph.statement:Completed AWSPolicyStatement statement #2
 INFO:cartography.graph.statement:Completed AWSPolicyStatement statement #1
 INFO:cartography.graph.statement:Completed AWSPolicyStatement statement #2
 INFO:cartography.graph.statement:Completed AWSPolicyStatement statement #1
@@ -266,8 +271,8 @@ INFO:cartography.graph.statement:Completed AWSIpRange statement #3
 INFO:cartography.graph.statement:Completed AWSEC2SecurityGroup statement #1
 INFO:cartography.graph.statement:Completed AWSEC2SecurityGroup statement #2
 INFO:cartography.graph.statement:Completed AWSEC2SecurityGroup statement #3
-INFO:cartography.util:Did not run EC2 Instances assume IAM roles because it needs {'iam', 'iaminstanceprofiles', 'ec2:instance'} to be included as a requested sync. You specified: {'iam', 's3', 'ec2:security_group'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
-INFO:cartography.util:Did not run Lambda functions with ECR images because it needs {'ecr', 'lambda_function'} to be included as a requested sync. You specified: {'iam', 's3', 'ec2:security_group'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
+INFO:cartography.util:Did not run EC2 Instances assume IAM roles because it needs {'iaminstanceprofiles', 'ec2:instance', 'iam'} to be included as a requested sync. You specified: {'ec2:security_group', 's3', 'iam'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
+INFO:cartography.util:Did not run Lambda functions with ECR images because it needs {'ecr', 'lambda_function'} to be included as a requested sync. You specified: {'ec2:security_group', 's3', 'iam'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
 INFO:cartography.graph.statement:Completed aws_post_ingestion_principals_cleanup statement #1
 INFO:cartography.graph.statement:Completed aws_ip_node_label_migration statement #1
 INFO:cartography.graph.statement:Completed aws_ip_node_label_migration statement #2
@@ -275,16 +280,16 @@ INFO:cartography.graph.statement:Completed aws_ip_node_label_migration statement
 INFO:cartography.graph.statement:Completed aws_ip_node_label_migration statement #4
 INFO:cartography.graph.statement:Completed aws_ip_node_label_migration statement #5
 INFO:cartography.graph.statement:Completed aws_ip_node_label_migration statement #6
-INFO:cartography.util:Did not run AWS LoadBalancerV2 internet exposure because it needs {'ec2:load_balancer', 'ec2:load_balancer_v2', 'ec2:security_group', 'ec2:instance'} to be included as a requested sync. You specified: {'iam', 's3', 'ec2:security_group'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
-INFO:cartography.util:Did not run AWS LoadBalancer internet exposure because it needs {'ec2:load_balancer', 'ec2:load_balancer_v2', 'ec2:security_group', 'ec2:instance'} to be included as a requested sync. You specified: {'iam', 's3', 'ec2:security_group'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
-INFO:cartography.util:Did not run AWS EC2 instance internet exposure because it needs {'ec2:load_balancer', 'ec2:load_balancer_v2', 'ec2:security_group', 'ec2:instance'} to be included as a requested sync. You specified: {'iam', 's3', 'ec2:security_group'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
-INFO:cartography.util:Did not run AWS Auto Scaling group internet exposure because it needs {'ec2:load_balancer', 'ec2:autoscalinggroup', 'ec2:security_group', 'ec2:load_balancer_v2', 'ec2:instance'} to be included as a requested sync. You specified: {'iam', 's3', 'ec2:security_group'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
-INFO:cartography.util:Did not run Analysis jobs for EC2 Key Pairs properties because it needs {'ec2:keypair'} to be included as a requested sync. You specified: {'iam', 's3', 'ec2:security_group'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
-INFO:cartography.util:Did not run Analysis jobs for EC2 Key Pairs matching fingerprints because it needs {'ec2:keypair'} to be included as a requested sync. You specified: {'iam', 's3', 'ec2:security_group'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
-INFO:cartography.util:Did not run AWS EKS internet exposure because it needs {'eks'} to be included as a requested sync. You specified: {'iam', 's3', 'ec2:security_group'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
+INFO:cartography.util:Did not run AWS LoadBalancerV2 internet exposure because it needs {'ec2:load_balancer', 'ec2:instance', 'ec2:security_group', 'ec2:load_balancer_v2'} to be included as a requested sync. You specified: {'ec2:security_group', 's3', 'iam'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
+INFO:cartography.util:Did not run AWS LoadBalancer internet exposure because it needs {'ec2:load_balancer', 'ec2:instance', 'ec2:security_group', 'ec2:load_balancer_v2'} to be included as a requested sync. You specified: {'ec2:security_group', 's3', 'iam'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
+INFO:cartography.util:Did not run AWS EC2 instance internet exposure because it needs {'ec2:load_balancer', 'ec2:instance', 'ec2:security_group', 'ec2:load_balancer_v2'} to be included as a requested sync. You specified: {'ec2:security_group', 's3', 'iam'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
+INFO:cartography.util:Did not run AWS Auto Scaling group internet exposure because it needs {'ec2:load_balancer', 'ec2:instance', 'ec2:load_balancer_v2', 'ec2:autoscalinggroup', 'ec2:security_group'} to be included as a requested sync. You specified: {'ec2:security_group', 's3', 'iam'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
+INFO:cartography.util:Did not run Analysis jobs for EC2 Key Pairs properties because it needs {'ec2:keypair'} to be included as a requested sync. You specified: {'ec2:security_group', 's3', 'iam'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
+INFO:cartography.util:Did not run Analysis jobs for EC2 Key Pairs matching fingerprints because it needs {'ec2:keypair'} to be included as a requested sync. You specified: {'ec2:security_group', 's3', 'iam'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
+INFO:cartography.util:Did not run AWS EKS internet exposure because it needs {'eks'} to be included as a requested sync. You specified: {'ec2:security_group', 's3', 'iam'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
 INFO:cartography.graph.statement:Completed aws_foreign_accounts statement #1
 INFO:cartography.graph.statement:Completed aws_foreign_accounts statement #2
-INFO:cartography.util:Did not run AWS ECS internet exposure because it needs {'ec2:load_balancer', 'ecs', 'ec2:load_balancer_v2:expose', 'ec2:network_interface', 'ec2:security_group', 'ec2:load_balancer_v2', 'ec2:instance'} to be included as a requested sync. You specified: {'iam', 's3', 'ec2:security_group'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
-INFO:cartography.util:Did not run AWS LoadBalancer to ECS Container direct relationship because it needs {'ec2:load_balancer', 'ecs', 'ec2:load_balancer_v2:expose', 'ec2:network_interface', 'ec2:security_group', 'ec2:load_balancer_v2', 'ec2:instance'} to be included as a requested sync. You specified: {'iam', 's3', 'ec2:security_group'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
+INFO:cartography.util:Did not run AWS ECS internet exposure because it needs {'ec2:load_balancer', 'ec2:instance', 'ec2:load_balancer_v2', 'ec2:load_balancer_v2:expose', 'ec2:security_group', 'ecs', 'ec2:network_interface'} to be included as a requested sync. You specified: {'ec2:security_group', 's3', 'iam'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
+INFO:cartography.util:Did not run AWS LoadBalancer to ECS Container direct relationship because it needs {'ec2:load_balancer', 'ec2:instance', 'ec2:load_balancer_v2', 'ec2:load_balancer_v2:expose', 'ec2:security_group', 'ecs', 'ec2:network_interface'} to be included as a requested sync. You specified: {'ec2:security_group', 's3', 'iam'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
 INFO:cartography.sync:Finishing sync stage 'aws'
-INFO:cartography.sync:Finishing sync with update tag '1789022396'
+INFO:cartography.sync:Finishing sync with update tag '1789032314'

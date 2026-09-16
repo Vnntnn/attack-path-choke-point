@@ -108,6 +108,37 @@ resource "aws_iam_role_policy" "cross_account_trust_admin" {
   })
 }
 
+# --- aws-key-on-host: real IAM user + real LocalStack-issued access key.
+# The on-prem side (lab/onprem/) writes THIS key id into a container's
+# ~/.aws/credentials. The exporter's cross-domain edge exists only if that
+# planted file's key id matches an AccountAccessKey node Cartography
+# independently discovered via sync_user_access_keys -- two sources, not one
+# author's say-so. See lab/README.md.
+resource "aws_iam_user" "leaked_key_user" {
+  name = "itis2026-lab-leaked-key-user"
+}
+
+resource "aws_iam_access_key" "leaked_key" {
+  user = aws_iam_user.leaked_key_user.name
+}
+
+resource "aws_iam_user_policy" "leaked_key_admin" {
+  name = "admin-access"
+  user = aws_iam_user.leaked_key_user.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = "*"
+      Resource = "*"
+    }]
+  })
+}
+
+output "leaked_access_key_id" {
+  value = aws_iam_access_key.leaked_key.id
+}
+
 # --- sg-open-mgmt-port: security group, 0.0.0.0/0 on 22/3389 ---
 resource "aws_security_group" "open_mgmt" {
   name        = "itis2026-lab-open-mgmt"

@@ -18,7 +18,9 @@ from pathlib import Path
 from neo4j import GraphDatabase
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from attackpath import graph as G  # noqa: E402
+import onprem  # noqa: E402
 
 
 def _fetch_s3_public_read(session) -> list[str]:
@@ -55,7 +57,53 @@ def _fetch_cross_account_trusts(session) -> list[tuple[str, str, str]]:
             for r in session.run(q, account_id="000000000000")]
 
 
-def build_graph(session, seed: int) -> "G.nx.DiGraph":
+def _fetch_access_key_owners(session) -> dict[str, str]:
+    """accesskeyid -> IAM user name, for every access key Cartography's
+    sync_user_access_keys independently discovered on the cloud side."""
+    q = """
+    MATCH (u:AWSUser)-[:AWS_ACCESS_KEY]-(k:AccountAccessKey)
+    WHERE k.status = "Active"
+    RETURN k.accesskeyid AS key_id, u.name AS user_name
+    """
+    return {r["key_id"]: r["user_name"] for r in session.run(q)}
+
+
+def _add_onprem_chain(g: "G.nx.DiGraph", entry, session) -> None:
+    """On-prem chain: internet -> dmz-host -> internal-host (flat network, no
+    segmentation) -> cloud identity, added only if nmap confirms both hosts
+    are actually reachable AND the access key id read off internal-host's
+    filesystem matches one Cartography discovered independently on the
+    cloud side. Two sources agreeing is the correlation; either one alone
+    is not."""
+    dmz_ip = onprem.docker_ip(onprem.DMZ_CONTAINER)
+    internal_ip = onprem.docker_ip(onprem.INTERNAL_CONTAINER)
+    open_ports = onprem.nmap_open_ports([dmz_ip, internal_ip])
+    if 22 not in open_ports.get(dmz_ip, set()) or 22 not in open_ports.get(internal_ip, set()):
+        raise RuntimeError(f"nmap did not find ssh open on both on-prem hosts: {open_ports}")
+
+    leaked_key_id = onprem.read_leaked_access_key_id()
+    cloud_keys = _fetch_access_key_owners(session)
+    owner = cloud_keys.get(leaked_key_id)
+    if owner is None:
+        raise RuntimeError(
+            f"key {leaked_key_id!r} read off {onprem.INTERNAL_CONTAINER} does not match any "
+            f"AccountAccessKey Cartography discovered ({sorted(cloud_keys)}) -- no correlation, no edge"
+        )
+
+    dmz_node = (f"host:{onprem.DMZ_CONTAINER}", "anon")
+    internal_node = (f"host:{onprem.INTERNAL_CONTAINER}", "anon")
+    user_node = (f"user:{owner}", "admin")
+
+    G.add_edge(g, entry, dmz_node,
+                kind="deterministic", ref="internet-facing-host", domain="onprem")
+    G.add_edge(g, dmz_node, internal_node,
+                kind="deterministic", ref="flat-vlan-no-segmentation", domain="onprem")
+    G.add_edge(g, internal_node, user_node,
+                kind="misconfig", ref="aws-key-on-host", domain="cross")
+    g.nodes[user_node]["target"] = True
+
+
+def build_graph(session, seed: int, include_onprem: bool = True) -> "G.nx.DiGraph":
     g = G.new_graph(seed=seed, source="lab-localstack")
     entry = ("internet", "anon")
 
@@ -83,6 +131,10 @@ def build_graph(session, seed: int) -> "G.nx.DiGraph":
 
     g.nodes[entry]["entry"] = True
     g.nodes[target]["target"] = True
+
+    if include_onprem:
+        _add_onprem_chain(g, entry, session)  # adds its own target node
+
     return g
 
 
@@ -94,11 +146,13 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--out-json", default="lab/lab_graph.json")
     ap.add_argument("--out-csv", default="lab/lab_graph.csv")
+    ap.add_argument("--skip-onprem", action="store_true",
+                     help="cloud side alone, no lab/onprem containers required")
     args = ap.parse_args()
 
     driver = GraphDatabase.driver(args.neo4j_uri, auth=(args.neo4j_user, args.neo4j_password))
     with driver.session() as session:
-        g = build_graph(session, args.seed)
+        g = build_graph(session, args.seed, include_onprem=not args.skip_onprem)
     driver.close()
 
     G.validate_structure(g)
