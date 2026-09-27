@@ -4,3 +4,5 @@ __pycache__/
 *.pyc
 lab/terraform/.terraform/
 lab/terraform/terraform.tfstate*
+lab/terraform/terraform.tfvars
+lab/terraform/*.auto.tfvars

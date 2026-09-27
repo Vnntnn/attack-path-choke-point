@@ -14,18 +14,22 @@ terraform {
 
 provider "aws" {
   region                      = "us-east-1"
-  access_key                  = "test"
-  secret_key                  = "test"
-  s3_use_path_style           = true
-  skip_credentials_validation = true
-  skip_metadata_api_check     = true
-  skip_requesting_account_id  = true
+  access_key                  = var.aws_access_key
+  secret_key                  = var.aws_secret_key
+  token                       = var.aws_session_token != "" ? var.aws_session_token : null
+  s3_use_path_style           = var.use_localstack
+  skip_credentials_validation = var.use_localstack
+  skip_metadata_api_check     = var.use_localstack
+  skip_requesting_account_id  = var.use_localstack
 
-  endpoints {
-    s3  = "http://localhost:4566"
-    iam = "http://localhost:4566"
-    sts = "http://localhost:4566"
-    ec2 = "http://localhost:4566"
+  dynamic "endpoints" {
+    for_each = var.use_localstack ? [1] : []
+    content {
+      s3  = "http://localhost:4566"
+      iam = "http://localhost:4566"
+      sts = "http://localhost:4566"
+      ec2 = "http://localhost:4566"
+    }
   }
 }
 
@@ -34,8 +38,24 @@ resource "aws_s3_bucket" "public_data" {
   bucket = "itis2026-lab-public-data"
 }
 
-resource "aws_s3_bucket_policy" "public_data_read" {
+# Real AWS blocks public bucket policies by default (S3 Block Public Access).
+# LocalStack doesn't enforce this, so it was never needed there -- required
+# only when use_localstack=false. If the account also has account-level BPA
+# on, this bucket-level override isn't enough; that needs the account owner
+# to change aws_s3_account_public_access_block, out of this module's reach.
+resource "aws_s3_bucket_public_access_block" "public_data" {
+  count  = var.use_localstack ? 0 : 1
   bucket = aws_s3_bucket.public_data.id
+
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
+
+resource "aws_s3_bucket_policy" "public_data_read" {
+  depends_on = [aws_s3_bucket_public_access_block.public_data]
+  bucket     = aws_s3_bucket.public_data.id
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{

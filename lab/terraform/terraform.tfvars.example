@@ -1,0 +1,13 @@
+# Copy this to terraform.tfvars (gitignored) and fill in real values.
+# terraform.tfvars is never committed -- see .gitignore.
+
+# --- Local testing (LocalStack, default) ---
+use_localstack = true
+aws_access_key = "test"
+aws_secret_key = "test"
+
+# --- Real AWS ---
+# use_localstack    = false
+# aws_access_key    = "AKIA..."
+# aws_secret_key    = "..."
+# aws_session_token = ""          # only if using temporary/STS credentials
