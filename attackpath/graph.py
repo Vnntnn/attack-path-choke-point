@@ -1,6 +1,6 @@
 """Attack graph model: node = (resource, privilege), edge = one attacker action.
 
-Declared semantics:
+Declared semantics (non-negotiable):
   * OR-semantics -- v is reachable if ANY predecessor is reached. No AND-nodes.
   * Monotonic -- the attacker never loses a privilege already gained.
   * Every edge carries `p_source` in {epss, fitted, deterministic, expert}
@@ -9,8 +9,8 @@ Declared semantics:
 The analyzer never touches Neo4j. Native format is JSON (node-link, keeps node
 and graph attributes); `to_csv` exists for the lab exporter to write into.
 
-Plain nx.DiGraph + module functions, no wrapper class -- nothing here
-needs state that the graph itself does not already hold.
+Kept simple on purpose: plain nx.DiGraph + module functions, no wrapper class
+-- nothing here needs state that the graph itself does not already hold.
 """
 from __future__ import annotations
 
@@ -54,8 +54,11 @@ def targets(G: nx.DiGraph) -> list[Node]:
     return [n for n, d in G.nodes(data=True) if d.get("target")]
 
 
-def validate_structure(G: nx.DiGraph) -> None:
-    """Structural invariants. Raises ValueError on the first violation."""
+def validate_structure(G: nx.DiGraph, require_cross: bool = True) -> None:
+    """Structural invariants. Raises ValueError on the first violation.
+
+    require_cross=False is for a deliberately single-domain graph (the lab's
+    cloud-only export); every hybrid graph must keep the default."""
     if not entries(G):
         raise ValueError("graph has no entry node")
     if not targets(G):
@@ -70,7 +73,8 @@ def validate_structure(G: nx.DiGraph) -> None:
             raise ValueError(f"edge {u}->{v} has domain={d.get('domain')!r}")
         if not d.get("ref"):
             raise ValueError(f"edge {u}->{v} has no provenance ref")
-    if not any(d["domain"] == "cross" for _, _, d in G.edges(data=True)):
+    if require_cross and not any(d["domain"] == "cross"
+                                 for _, _, d in G.edges(data=True)):
         raise ValueError("hybrid graph with no cross-domain edge")
     for e in entries(G):
         for t in targets(G):

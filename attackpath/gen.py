@@ -1,7 +1,6 @@
 """Seeded generator for hybrid on-prem + cloud attack graphs.
 
-Sampling model (documented because the generator ships as part of the artifact,
-cross-domain mechanisms):
+Sampling model (documented because the generator ships as part of the artifact):
 
   node budget      ~60% on-prem, ~40% cloud
   on-prem host     two nodes, (h, "user") and (h, "root"), joined by a
@@ -36,13 +35,13 @@ JOINED = os.path.join(ROOT, "data", "fit", "cvss_epss_joined.csv")
 PARTIAL = os.path.join(ROOT, "data", "fit", "cvss_epss_partial.csv")
 RAW = os.path.join(ROOT, "data", "raw")
 
-# locked so pairwise_dominators cost cannot drift
+# Locked counts, so pairwise_dominators cost cannot drift between runs
 ENTRY_TARGET = {50: (3, 2), 200: (5, 3), 800: (8, 4)}
 LATERAL_DEGREE = {"flat": 3, "3tier": 2, "micro": 1}
 CROSS_BASE = {"low": 1, "med": 2, "high": 4}
 ONPREM_SHARE = 0.6
 
-# slugs must match docs/MISCONFIG_RUBRIC.md exactly; misconfig slugs resolve
+# slugs must match the misconfig rubric's exactly; misconfig slugs resolve
 # through data/fit/misconfig_vectors.json, structural ones never do
 MISCONFIG_LATERAL = ["smb-signing-disabled", "shared-local-admin-password",
                      "unauth-internal-service"]
@@ -210,7 +209,7 @@ def generate(n: int, cross_density: str, segmentation: str, seed: int) -> nx.DiG
             u, v = (h, "root"), rng.choice(roles)
         add_edge(G, u, v, kind=kind, ref=ref, domain="cross")
 
-    # --- entries and targets
+    # --- entries and targets (counts locked above, see ENTRY_TARGET)
     entry_zone = "dmz" if segmentation == "3tier" else zmap[hosts[0]]
     cand = [h for h in hosts if zmap[h] == entry_zone and h != "dc01"] or hosts[:-1]
     entries = [(h, "user") for h in cand[:n_entries]]
@@ -254,7 +253,7 @@ def _repair(G, entries, targets, hosts, roles, zmap, allow, rng, cve):
                     continue
                 # last resort: a VPN/Direct Connect link, which is legal
                 # regardless of on-prem segmentation
-                dst2 = next((x for x in co if x != e), None)
+                dst2 = next((x for x in sorted(co) if x != e), None)
                 if src is None or dst2 is None:
                     raise RuntimeError(f"cannot repair {e} -> {t}")
                 add_edge(G, src, dst2, kind="deterministic",

@@ -68,3 +68,15 @@ def test_targets_span_both_domains():
     G = gen.generate(200, "med", "3tier", 6)
     tg = [t for t, d in G.nodes(data=True) if d.get("target")]
     assert any(t[0].startswith("s3://") for t in tg) and ("dc01", "root") in tg
+
+
+def test_single_domain_graph_needs_require_cross_false():
+    import pytest
+    from attackpath.graph import add_edge, new_graph
+    G = new_graph(1)
+    add_edge(G, ("a", "x"), ("b", "y"), kind="deterministic", ref="r", domain="cloud")
+    G.nodes[("a", "x")]["entry"] = True
+    G.nodes[("b", "y")]["target"] = True
+    with pytest.raises(ValueError, match="no cross-domain edge"):
+        validate_structure(G)
+    validate_structure(G, require_cross=False)
