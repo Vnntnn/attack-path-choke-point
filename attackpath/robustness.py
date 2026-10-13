@@ -14,7 +14,8 @@ Deterministic edges (p=1, a trust relation the attacker simply holds) are never
 perturbed: their probability is not an estimate.
 
 Metrics: Jaccard@k on the ranked node list is primary (k=5,10); Kendall's tau
-over all nodes is secondary and gets flattened by ties.
+over all nodes is secondary -- it gets flattened by the ties that the
+Delta(v) = infinity group produces across the whole graph.
 """
 from __future__ import annotations
 
@@ -60,16 +61,19 @@ class EmpiricalNoise:
     p, else the pooled distribution.
 
     The middle step exists because pooling is biased, not merely coarse: the
-    measured residual spread is |r| p50 = 0.39 nats overall but 1.55 on the top
-    EPSS decile, and most fitted misconfig classes sit in thin cells. Falling
+    measured residual spread is |r| p50 = 0.62 nats overall but 1.76 on the top
+    EPSS decile (5-fold out-of-fold residuals of the shipped OLS fit, re-measured
+    2026-10-09), and most fitted misconfig classes sit in thin cells. Falling
     straight to pooled would perturb exactly the high-p edges that decide paths
-    under -log p at a quarter of their true spread, and exp 2 would report the
-    ranking as more stable than it is.
+    under -log p at about a third of their true spread, and exp 2 would report
+    the ranking as more stable than it is.
 
     Known residual bias, for the limitations section: the fit's predictions are
-    compressed (predicted p tops out around 0.08 while true EPSS reaches 0.999),
-    so conditioning on predicted p recovers roughly 2.6x of the ~4.5x spread
-    variation. The empirical arm stays mildly optimistic in the tail.
+    compressed (predicted p tops out at 0.0186 while true EPSS reaches 0.99999),
+    so conditioning on predicted p recovers only part of the spread variation:
+    median |r| rises 0.51 -> 0.84 across predicted-p quintiles (1.6x) but is
+    3.7x larger on the true top decile than on the bottom 90%. The empirical arm
+    stays optimistic in the tail; the 4x and 8x scales in exp 2 bracket that.
     """
 
     def __init__(self, path=RESID):

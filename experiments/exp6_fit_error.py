@@ -25,6 +25,7 @@ import networkx as nx
 
 from attackpath import chokepoints as cp
 from attackpath import gen
+from attackpath import graph as ag
 from attackpath import results as rs
 from attackpath import robustness as rb
 from attackpath import weights as wt
@@ -49,8 +50,7 @@ def _cheapest(G, ent, tgt):
 
 def run(n, cross, seg, seed, cat):
     G = gen.generate(n=n, cross_density=cross, segmentation=seg, seed=seed)
-    ent = [x for x, d in G.nodes(data=True) if d.get("entry")]
-    tgt = [x for x, d in G.nodes(data=True) if d.get("target")]
+    ent, tgt = ag.entries(G), ag.targets(G)
     arms = {}
     for model in ("epss", "fitted"):
         H = G.copy()

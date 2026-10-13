@@ -11,10 +11,9 @@ set and published tools rarely say which one they mean:
 `pairwise_dominators` intersected over REACHABLE pairs are provably the same
 set. That identity is a correctness test, never a reported finding.
 
-Convention that must not drift: an (entry, target) pair where the
-target is unreachable is SKIPPED. Treating it as the empty set breaks the
-identity above instantly, since "every path" over an empty path set is
-vacuously true.
+Convention that must not drift: an (entry, target) pair where the target is
+unreachable is SKIPPED. Treating it as the empty set breaks the identity
+above instantly, since "every path" over an empty path set is vacuously true.
 
 Endpoints (entries and targets) are excluded from every returned set by
 default: a target trivially lies on every path to itself, and counting it would
@@ -61,8 +60,8 @@ def post_dominators(G: nx.DiGraph, entries, targets,
                     include_endpoints: bool = False) -> set:
     """Global choke points via one virtual source and one virtual sink.
 
-    Built on the reversed graph rooted at the sink, i.e. post-dominators of the
-    virtual source.
+    Built on the reversed graph rooted at the sink, i.e. post-dominators of
+    the virtual source.
     """
     entries, targets = list(entries), list(targets)
     H = G.copy()
@@ -197,6 +196,60 @@ def node_min_cut(G: nx.DiGraph, entries, targets, capacity=None) -> set | None:
     return cut
 
 
+# --- how much of the danger crosses a domain boundary (PDF expected result 4) ---
+
+def cross_domain_share(G: nx.DiGraph, entries, targets, weight="w") -> dict:
+    """Two shares over the REACHABLE (entry, target) pairs.
+
+    cheapest_cross_share  pairs whose cheapest (-log p) path uses >= 1 edge with
+                          domain == "cross" -- "the most likely attack crosses".
+    cross_required_share  pairs that become unreachable once every cross edge is
+                          removed -- "no attack avoids crossing".
+
+    Entries sit on-prem, so a CLOUD target is unreachable without a cross edge
+    by construction: pooled over targets, the share mostly measures the target
+    mix. The per-target-domain split below is the informative number -- in
+    particular the share for ON-PREM targets, where crossing is optional.
+
+    Cheapest path only, not k-shortest (Yen is ~minutes per n=800 graph); ties
+    among equal-cost paths are broken by insertion order, which the seed
+    fixes. Upgrade to a k-path share if one path per pair proves too coarse.
+    """
+    entries, targets = list(entries), list(targets)
+    no_cross = G.copy()
+    no_cross.remove_edges_from([(u, v) for u, v, d in G.edges(data=True)
+                                if d.get("domain") == "cross"])
+    def tdom(t):    # a target none of whose in-edges is on-prem lives in the cloud
+        return ("cloud" if all(d.get("domain") != "onprem"
+                               for *_, d in G.in_edges(t, data=True)) else "onprem")
+
+    n = n_cheap = n_req = 0
+    by = {"onprem": [0, 0, 0], "cloud": [0, 0, 0]}      # pairs, cheapest, required
+    for e in entries:
+        dist, paths = nx.single_source_dijkstra(G, e, weight=weight)
+        for t in targets:
+            if t not in dist:
+                continue
+            p = paths[t]
+            cheap = any(G[u][v].get("domain") == "cross" for u, v in zip(p, p[1:]))
+            req = not nx.has_path(no_cross, e, t)
+            for acc in (by[tdom(t)], None):
+                if acc is not None:
+                    acc[0] += 1; acc[1] += cheap; acc[2] += req
+            n += 1; n_cheap += cheap; n_req += req
+
+    def share(a, b):
+        return a / b if b else None
+    out = {"n_pairs": n,
+           "cheapest_cross_share": share(n_cheap, n),
+           "cross_required_share": share(n_req, n)}
+    for k, (m, c, r) in by.items():
+        out[f"n_pairs_{k}_target"] = m
+        out[f"cheapest_cross_share_{k}_target"] = share(c, m)
+        out[f"cross_required_share_{k}_target"] = share(r, m)
+    return out
+
+
 # --- node ranking score ------------------------------------------------------
 
 def _pair_costs(G, entries, targets, weight="w"):
@@ -267,9 +320,9 @@ def delta_cost_scores(G: nx.DiGraph, entries, targets, weight="w") -> dict:
 
 
 def rank_nodes(scores: dict) -> list:
-    """Lexicographic ordering: disconnecting nodes first (more pairs cut = higher), then by
-    cheapest blocked route, then by summed cost increase. Ties broken by node id
-    so the ranking is deterministic and Jaccard@k is reproducible."""
+    """Lexicographic ordering: disconnecting nodes first (more pairs cut = higher),
+    then by cheapest blocked route, then by summed cost increase. Ties broken by
+    node id so the ranking is deterministic and Jaccard@k is reproducible."""
     return [v for v, _ in sorted(
         scores.items(),
         key=lambda kv: (-kv[1][0], kv[1][2] if kv[1][0] else 0.0,

@@ -20,12 +20,15 @@ from __future__ import annotations
 
 import argparse
 import itertools
+import os
 import random
 import time
+import zlib
 from concurrent.futures import ProcessPoolExecutor
 
 from attackpath import chokepoints as cp
 from attackpath import gen
+from attackpath import graph as ag
 from attackpath import results as rs
 from attackpath import robustness as rb
 from attackpath import weights as wt
@@ -34,10 +37,12 @@ SIZES = [50, 200, 800]
 CROSS = ["low", "med", "high"]
 SEG = ["flat", "3tier", "micro"]
 MODELS = ["epss", "cvss", "uniform", "random"]
-REPS = 5
+REPS = 8                # 27 cells x 8 = 216 structures >= the proposal's 200
+SEED_STRIDE = 100       # cell index * stride + rep: any reps value reproduces any subset
 
 SYM_LEVELS = [0.1, 0.2, 0.3, 0.5]     # the band the proposal names
-EMP_SCALES = [0.5, 1.0, 2.0]          # multiples of the measured residual spread
+EMP_SCALES = [0.5, 1.0, 2.0, 4.0, 8.0]   # multiples of the measured residual spread;
+                                          # 4x/8x look for the point where the ranking breaks
 NOISE_REPS = 3
 DROP_FRACS = [0.05, 0.10, 0.20]
 DROP_REPS = 3
@@ -61,6 +66,11 @@ EXTRA = {
     "exp3": ["drop_frac", "rep", "n_dropped", "pairs_reachable_before",
              "pairs_reachable_after", "jaccard5", "jaccard10",
              "jaccard5_tie", "jaccard10_tie", "kendall_tau"] + DIAG + DIAG_P,
+    "exp7": ["n_pairs", "cheapest_cross_share", "cross_required_share",
+             "n_pairs_onprem_target", "cheapest_cross_share_onprem_target",
+             "cross_required_share_onprem_target", "n_pairs_cloud_target",
+             "cheapest_cross_share_cloud_target", "cross_required_share_cloud_target",
+             "n_cross_edges"],
     "exp4": ["model_a", "model_b", "jaccard5", "jaccard10", "jaccard5_tie",
              "jaccard10_tie", "kendall_tau",
              "global_set_jaccard"] + ["n_inf_a", "n_inf_b",
@@ -70,10 +80,11 @@ EXTRA = {
 
 def structures(sizes, reps):
     """(n, cross, seg, rep, seed) for every structural cell. Seed is a pure
-    function of the cell, so any subset of the grid reproduces exactly."""
-    for i, (n, c, s, r) in enumerate(
-            itertools.product(sizes, CROSS, SEG, range(reps))):
-        yield n, c, s, r, BASE_SEED + i
+    function of the cell's absolute position and rep -- not of which sizes or
+    how many reps were requested -- so any subset of the grid reproduces."""
+    for n, c, s, r in itertools.product(sizes, CROSS, SEG, range(reps)):
+        cell = (SIZES.index(n) * len(CROSS) + CROSS.index(c)) * len(SEG) + SEG.index(s)
+        yield n, c, s, r, BASE_SEED + cell * SEED_STRIDE + r
 
 
 def _weighted(G, model, seed):
@@ -90,14 +101,13 @@ def run_structure(args):
     n, cross, seg, rep, seed, noise_avail = args
     out = {k: [] for k in EXTRA}
     G = gen.generate(n=n, cross_density=cross, segmentation=seg, seed=seed)
-    ent, tgt = [x for x, d in G.nodes(data=True) if d.get("entry")], \
-               [x for x, d in G.nodes(data=True) if d.get("target")]
+    ent, tgt = ag.entries(G), ag.targets(G)
     graph_id = f"{n}-{cross}-{seg}-r{rep}"
     noise = rb.EmpiricalNoise() if noise_avail else None
     per_model_scores, per_model_global, per_model_diag = {}, {}, {}
 
     for model in MODELS:
-        H = _weighted(G, model, seed + hash(model) % 1000)
+        H = _weighted(G, model, seed + zlib.crc32(model.encode()) % 1000)
         H.graph["n_requested"] = n
         base = dict(rs.graph_row(H), graph_id=graph_id)
         rng = random.Random(seed)
@@ -152,6 +162,11 @@ def run_structure(args):
                 target=f"{'|'.join(e)}->{'|'.join(t)}", set_size=len(s),
                 non_empty=int(bool(s)), n_pairs_reachable=len(pairs),
                 n_pairs_total=n_total, runtime_s=round(t_core, 4)))
+
+        # --- exp 7: how much of the danger crosses a domain boundary
+        out["exp7"].append(dict(base, **cp.cross_domain_share(H, ent, tgt),
+            n_cross_edges=sum(1 for *_, d in H.edges(data=True)
+                              if d.get("domain") == "cross")))
 
         # --- exp 2: weight perturbation
         arms = [("symmetric", lv) for lv in SYM_LEVELS]
@@ -220,7 +235,15 @@ def main():
     ap.add_argument("--reps", type=int, default=REPS)
     ap.add_argument("--jobs", type=int, default=1)
     ap.add_argument("--outdir", default="results")
+    ap.add_argument("--force", action="store_true",
+                    help="delete existing exp*.csv in outdir first (Writer appends)")
     a = ap.parse_args()
+    old = [os.path.join(a.outdir, f"{k}.csv") for k in EXTRA
+           if os.path.exists(os.path.join(a.outdir, f"{k}.csv"))]
+    if old and not a.force:
+        raise SystemExit(f"refusing to append to existing {old}; rerun with --force")
+    for f in old:
+        os.remove(f)
 
     noise_avail = rb.EmpiricalNoise().available
     if not noise_avail:

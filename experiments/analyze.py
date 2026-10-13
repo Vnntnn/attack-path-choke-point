@@ -2,16 +2,18 @@
 """Turn results/exp*.csv into the tables and figures the report quotes.
 
 Every Jaccard@k is emitted with the fraction of graphs where n_inf >= k beside
-it. In those graphs top-k is an arbitrary pick inside an
-unordered set, so a Jaccard printed on its own is uninterpretable.
+it. In those graphs top-k is an arbitrary pick inside an unordered set (every
+node tied at Delta(v) = infinity), so a Jaccard printed on its own is
+uninterpretable.
 
-  uv run experiments/analyze.py
+  uv run --group report experiments/analyze.py
 """
 from __future__ import annotations
 
 import os
 
 import matplotlib
+import numpy as np
 import pandas as pd
 
 matplotlib.use("Agg")
@@ -25,16 +27,45 @@ def load(name):
     return pd.read_csv(os.path.join(RES, f"{name}.csv"))
 
 
+def _boot_ci(df, col, n_boot=2000, seed=20260826):
+    """95% CI of the mean over GRAPHS: reps inside a graph are correlated, so
+    the independent unit is the graph, not the row."""
+    per_graph = df.groupby("graph_id")[col].mean().dropna().to_numpy()
+    if len(per_graph) < 2:
+        return float("nan"), float("nan")
+    rng = np.random.default_rng(seed)
+    means = rng.choice(per_graph, (n_boot, len(per_graph))).mean(axis=1)
+    return tuple(np.percentile(means, [2.5, 97.5]))
+
+
+def _wilson(k, n, z=1.96):
+    """95% Wilson interval for k successes in n GRAPHS (not rows): small counts
+    like 18/216 make a bare percentage look more certain than it is."""
+    if n == 0:
+        return float("nan"), float("nan")
+    p = k / n
+    d = 1 + z * z / n
+    c = (p + z * z / (2 * n)) / d
+    h = z * ((p * (1 - p) / n + z * z / (4 * n * n)) ** 0.5) / d
+    return c - h, c + h
+
+
 def _jacc(df, by, cols=("jaccard5", "jaccard10")):
-    """Mean Jaccard plus the ranking interpretability guards."""
+    """Mean Jaccard, 95% CI over graphs, plus tie/infinity interpretability guards."""
     g = df.groupby(by, dropna=False)
     out = g[list(cols)].mean()
+    for c in cols:
+        ci = g.apply(lambda d, c=c: _boot_ci(d, c), include_groups=False)
+        out[f"{c}_lo"] = [v[0] for v in ci]
+        out[f"{c}_hi"] = [v[1] for v in ci]
     out["n"] = g.size()
-    out["frac_n_inf_ge_5"] = g.apply(lambda d: (d["n_inf"] >= 5).mean(),
-                                     include_groups=False)
-    out["frac_n_inf_ge_10"] = g.apply(lambda d: (d["n_inf"] >= 10).mean(),
-                                      include_groups=False)
-    out["mean_n_inf"] = g["n_inf"].mean()
+    out["n_graphs"] = g["graph_id"].nunique()
+    if "n_inf" in df.columns:       # tie guards only mean something for rankings
+        out["frac_n_inf_ge_5"] = g.apply(lambda d: (d["n_inf"] >= 5).mean(),
+                                         include_groups=False)
+        out["frac_n_inf_ge_10"] = g.apply(lambda d: (d["n_inf"] >= 10).mean(),
+                                          include_groups=False)
+        out["mean_n_inf"] = g["n_inf"].mean()
     return out.reset_index()
 
 
@@ -52,16 +83,28 @@ def exp1a(md):
     deg = df.groupby("capacity").apply(
         lambda d: (d["cut_value"] == 0).mean(), include_groups=False)
     md.append("## exp 1a — post-dominator set vs weighted node min-cut\n")
-    md.append(f"- rows: {len(df)}, node-split min-cut across capacity scales\n") #
-              f"scale sensitivity)\n")
+    md.append(f"- rows: {len(df)}, node-split min-cut across capacity scales\n")
     md.append(f"- fraction of cuts with total capacity exactly 0: "
               f"{dict(deg.round(3))} — the -log p scale is degenerate because "
               f"deterministic edges (p=1) have w=0\n")
+    md.append("- disagreement / cut_in_global are reported ONLY on rows where a "
+              "global dominator set exists: with an empty set, disagreement is 1.0 "
+              "by definition and says nothing about the two methods\n")
     for cap, sub in df.groupby("capacity"):
+        ne = sub[sub["n_global"] > 0]
         md.append(f"- capacity={cap}: mean |min-cut| "
                   f"{sub['n_cut'].mean():.2f}, mean |global dominator set| "
-                  f"{sub['n_global'].mean():.2f}, mean disagreement "
-                  f"{sub['disagreement'].mean():.3f}\n")
+                  f"{sub['n_global'].mean():.2f}; non-empty-global rows "
+                  f"{len(ne)}/{len(sub)} ({ne['graph_id'].nunique()} graphs): "
+                  f"cut inside dominator set {ne['cut_in_global'].mean():.3f}, "
+                  f"disagreement {ne['disagreement'].mean():.3f}\n")
+    ne = df[df["n_global"] > 0]
+    ne.groupby(["capacity", "weight_model"]).agg(
+        rows=("graph_id", "size"), graphs=("graph_id", "nunique"),
+        cut_in_global=("cut_in_global", "mean"),
+        global_in_cut=("global_in_cut", "mean"),
+        disagreement=("disagreement", "mean")).reset_index().to_csv(
+        f"{OUT}/exp1a_nonempty_global_only.csv", index=False)
     return t
 
 
@@ -79,10 +122,22 @@ def exp1b(md):
     md.append("headline: how often does a guaranteed *global* choke point "
               "exist at all\n\n")
     md.append(head.round(3).to_markdown() + "\n")
-    g = (df[df.definition == "global"].groupby("segmentation")["non_empty"]
-         .mean().round(3))
-    md.append(f"\nglobal non-empty rate by segmentation (this is exp 5): "
-              f"{dict(g)}\n")
+    # the dominator set reads no weights, so the 4 weight-model rows of a graph
+    # are identical: count each GRAPH once
+    gl = df[df.definition == "global"].drop_duplicates("graph_id")
+    rows = []
+    for label, sub in [("all", gl)] + [
+            (f"{col}={v}", x) for col in ("segmentation", "cross_density", "n_requested")
+            for v, x in gl.groupby(col)]:
+        k, n = int(sub["non_empty"].sum()), len(sub)
+        lo, hi = _wilson(k, n)
+        rows.append({"group": label, "graphs_with_global_set": k, "graphs": n,
+                     "rate": k / n, "ci95_lo": lo, "ci95_hi": hi})
+    w = pd.DataFrame(rows)
+    w.to_csv(f"{OUT}/exp1b_global_nonempty_ci.csv", index=False)
+    md.append("\nglobal choke point exists — counts of GRAPHS with 95% Wilson CI "
+              "(this is exp 5; report the count, not a bare percentage):\n\n")
+    md.append(w.round(3).to_markdown(index=False) + "\n")
     # exp 5: choke points vs segmentation granularity
     e5 = (df[df.definition == "global"]
           .groupby(["segmentation", "n_requested"])
@@ -127,6 +182,17 @@ def exp3(md):
     md.append(t.round(3).to_markdown(index=False) + "\n")
     md.append(f"\nmean (entry,target) pairs lost per drop level: "
               f"{dict(df.groupby('drop_frac')['pairs_lost'].mean().round(2))}\n")
+    # Dropping edges also deletes (entry,target) pairs outright, so the plain
+    # Jaccard mixes rank instability with pairs that stopped existing. Condition
+    # on runs that keep >= 90% of the pairs; n is printed because it collapses.
+    df["pairs_kept"] = df.pairs_reachable_after / df.pairs_reachable_before
+    kept = df[df.pairs_kept >= 0.9]
+    tk = _jacc(kept, ["drop_frac"])
+    tk.to_csv(f"{OUT}/exp3_edge_drop_pairs_kept_ge_90.csv", index=False)
+    md.append("\nconditioned on >= 90% of (entry,target) pairs still reachable "
+              "(all weight models pooled; `n_graphs` is how many graphs survive "
+              "the filter -- thin at 20%):\n\n")
+    md.append(tk.round(3).to_markdown(index=False) + "\n")
     fig, ax = plt.subplots(figsize=(6, 4))
     for wm, s in df.groupby("weight_model"):
         m = s.groupby("drop_frac")["jaccard5"].mean()
@@ -148,14 +214,17 @@ def exp4(md):
     t = (df.groupby("pair").agg(jaccard5=("jaccard5", "mean"),
                                 jaccard10=("jaccard10", "mean"),
                                 kendall_tau=("kendall_tau", "mean"),
-                                global_set_jaccard=("global_set_jaccard", "mean"),
                                 mean_n_inf_a=("n_inf_a", "mean"),
                                 mean_n_inf_b=("n_inf_b", "mean"),
                                 n=("jaccard5", "size")).reset_index())
     t.to_csv(f"{OUT}/exp4_model_comparison.csv", index=False)
     md.append("\n## exp 4 — weight models against each other (paired, same graph)\n")
     md.append("No ground truth exists on synthetic graphs, so this is "
-              "disagreement and stability only — never accuracy.\n\n")
+              "disagreement and stability only — never accuracy. `random` is the "
+              "null model: a pair that agrees about as well as a pair involving "
+              "`random` shows the ranking is set by structure, not by the "
+              "weights. global_set_jaccard is omitted: dominators read no "
+              "weights, so it is 1.0 by construction.\n\n")
     md.append(t.round(3).to_markdown(index=False) + "\n")
     # stability per model comes from exp 2, not from here
     st = load("exp2")
@@ -164,6 +233,32 @@ def exp4(md):
             .unstack().round(3))
     md.append("\nstability per weight model (mean Jaccard@5 by symmetric band):\n\n")
     md.append(stab.to_markdown() + "\n")
+    return t
+
+
+def exp7(md):
+    df = load("exp7")
+    cols = ["cheapest_cross_share", "cross_required_share",
+            "cheapest_cross_share_onprem_target", "cross_required_share_onprem_target",
+            "cheapest_cross_share_cloud_target"]
+    t = _jacc(df, ["weight_model"], cols=cols).drop(
+        columns=["frac_n_inf_ge_5", "frac_n_inf_ge_10", "mean_n_inf"], errors="ignore")
+    t.to_csv(f"{OUT}/exp7_cross_domain_share.csv", index=False)
+    by = (df[df.weight_model == "epss"]
+          .groupby(["cross_density", "segmentation"])[cols + ["n_cross_edges"]]
+          .mean().round(3))
+    by.to_csv(f"{OUT}/exp7_cross_domain_by_cell_epss.csv")
+    md.append("\n## exp 7 — share of attack paths that cross on-prem <-> cloud\n")
+    md.append("`cheapest_cross_share`: reachable (entry,target) pairs whose most "
+              "likely (-log p) path uses a cross edge. `cross_required_share`: pairs "
+              "with NO path once every cross edge is removed. Entries are on-prem, so "
+              "cloud targets always require crossing: read the `_onprem_target` "
+              "columns, where crossing is optional, as the informative ones. One "
+              "path per pair, so this is the most likely path, not all dangerous "
+              "paths.\n\n")
+    md.append(t.round(3).to_markdown(index=False) + "\n")
+    md.append("\nweight model `epss`, by cross-edge density x segmentation:\n\n")
+    md.append(by.to_markdown() + "\n")
     return t
 
 
@@ -187,6 +282,7 @@ def main():
     exp2(md)
     exp3(md)
     exp4(md)
+    exp7(md)
     with open(f"{RES}/SUMMARY.md", "w") as fh:
         fh.write("".join(md))
     print(f"wrote {RES}/SUMMARY.md, {OUT}/*.csv, {FIG}/*.png")
