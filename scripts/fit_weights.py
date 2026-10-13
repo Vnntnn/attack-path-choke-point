@@ -1,7 +1,3 @@
-# /// script
-# requires-python = ">=3.11"
-# dependencies = ["numpy", "pandas", "scikit-learn"]
-# ///
 """Fit CVSS v3.x base metrics -> EPSS, and report how wrong the mapping is.
 
 Two questions, both needed by the proposal:
@@ -10,7 +6,7 @@ Two questions, both needed by the proposal:
   objective 4  -- how big should the weight perturbation be?
                   Answer = the measured residual spread, not a guessed +-10-50%.
 
-Run:  uv run scripts/fit_weights.py
+Run:  uv run --group fit scripts/fit_weights.py
 """
 import json
 import os
@@ -300,9 +296,9 @@ def main():
     # Effective sample size, not row count. CVEs arrive in correlated batches
     # (same CNA, same day, identical vector, often identical EPSS), so rows are
     # near-duplicates. The model is really a per-vector-cell mean lookup, which
-    # is exactly what "what p do I assign this vector" needs -- but perturbation analysis consumes
-    # the UNCERTAINTY on each cell mean, and that is governed by the number of
-    # distinct cells and how many rows back each one, not by len(df).
+    # is exactly what "what p do I assign this vector" needs -- but perturbation
+    # analysis consumes the UNCERTAINTY on each cell mean, and that is governed
+    # by the number of distinct cells and how many rows back each one, not by len(df).
     cells = df.groupby(METRICS, observed=True).size()
     print(f"distinct CVSS metric cells={len(cells)}  "
           f"rows/cell median={cells.median():.0f} p10={cells.quantile(.1):.0f} "
@@ -358,7 +354,10 @@ def main():
         json.dump({r["model"]: {k: v for k, v in r.items() if k != "model"}
                    for r in results}, fh, indent=2)
 
-    best = max(results[:2], key=lambda r: r["r2_logit"])
+    # Report the model that prices edges: export_coeffs() above ships OLS, so
+    # the verdict and residual bands must describe OLS, not whichever CVSS-only
+    # model scored higher (the GBM stays in fit_report.csv as a reference row).
+    best = next(r for r in results if r["model"] == "ols_8metrics")
 
     # Out-of-fold residuals for EVERY row, not just the 25% holdout.
     # robustness.py conditions the noise draw on the exact CVSS vector cell an
@@ -414,7 +413,7 @@ def main():
               "   not on getting each p(e) exactly right. Say this explicitly in\n"
               "   the report; it is a different conclusion from 'the fit failed'.")
     if best["r2_logit"] < 0.35:
-        print("=> LOW R2 on absolute value. This is a finding, not a failure:\n"
+        print("=> LOW R2, as expected going in. This is a finding, not a failure:\n"
               "   CVSS cannot recover EPSS because EPSS is trained on exploitation\n"
               "   telemetry that CVSS deliberately excludes. Objective 2 becomes\n"
               "   'mapping + measured uncertainty', and objective 4 inherits a\n"
@@ -426,7 +425,7 @@ def main():
 
 
 def demo():
-    """Self-check: logit/sigmoid round-trip and that
+    """One runnable check: logit/sigmoid round-trip and that
     evaluate() scores a perfect predictor perfectly."""
     p = np.array([1e-5, 0.001, 0.5, 0.97])
     assert np.allclose(sigmoid(logit(p)), p, atol=1e-9), "logit round-trip broken"

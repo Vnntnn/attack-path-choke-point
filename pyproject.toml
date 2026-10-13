@@ -7,6 +7,12 @@ dependencies = ["networkx>=3.4", "numpy>=2.0", "scipy>=1.14", "pandas>=2.2", "ma
 
 [dependency-groups]
 dev = ["pytest>=8.3"]
+fit = [
+    "scikit-learn>=1.9.1",
+]
+report = [
+    "tabulate>=0.10.0",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
