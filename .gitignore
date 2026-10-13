@@ -6,3 +6,4 @@ lab/terraform/.terraform/
 lab/terraform/terraform.tfstate*
 lab/terraform/terraform.tfvars
 lab/terraform/*.auto.tfvars
+docs/report/build/

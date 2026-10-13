@@ -1,0 +1,121 @@
+% รายงานโครงงานศึกษาอิสระ ITIS2026 — คอมไพล์ด้วย XeTeX (tectonic): docs/report/build.sh
+\documentclass[a4paper,12pt]{report}
+
+% ---------- หน้ากระดาษ (ตามรายงานตัวอย่าง: ขอบซ้ายกว้างสำหรับเข้าเล่ม) ----------
+\usepackage[top=3.4cm,bottom=2.5cm,left=3.8cm,right=2.5cm,headheight=20pt,headsep=14pt]{geometry}
+
+% ---------- ฟอนต์ไทย: Sarabun (OFL) — ถ้าติดตั้ง TH Sarabun New ไว้ จะใช้ตัวนั้นก่อน ----------
+\usepackage{fontspec}
+% Thai line breaking: build/thai_zwsp.py puts U+200B between words; make it a break point.
+\catcode"200B=\active
+\protected\def^^^^200b{\hskip0pt plus 0.14em\relax}  % stretchable: spreads justification across Thai words
+\IfFontExistsTF{THSarabunNew}{%
+  \setmainfont{THSarabunNew}[BoldFont=THSarabunNew Bold,ItalicFont=THSarabunNew Italic,
+    BoldItalicFont=THSarabunNew BoldItalic,Scale=1.2]%
+}{%
+  \setmainfont{Sarabun}[Path=fonts/,Extension=.ttf,UprightFont=*-Regular,BoldFont=*-Bold,
+    ItalicFont=*-Italic,BoldItalicFont=*-BoldItalic]%
+}
+\setmonofont{DejaVu Sans Mono}[Scale=0.82]
+
+\usepackage{graphicx,xcolor,booktabs,array,multirow,longtable,float,enumitem,setspace,amsmath}
+\usepackage{fancyhdr,titlesec,tocloft,caption,chngcntr}
+% เลขตาราง/รูปต่อเนื่องทั้งเล่ม (รูปที่ 23, ตารางที่ 7) เหมือนรายงานตัวอย่าง
+\counterwithout{table}{chapter}
+\counterwithout{figure}{chapter}
+\usepackage[hidelinks,bookmarks=false,pdfpagelabels=false]{hyperref}
+
+% ---------- ขนาดตัวอักษร: เนื้อหา 16pt เหมือนรายงานตัวอย่าง ----------
+\renewcommand{\normalsize}{\fontsize{16pt}{22pt}\selectfont}
+\renewcommand{\small}{\fontsize{14pt}{19pt}\selectfont}
+\renewcommand{\footnotesize}{\fontsize{13pt}{17pt}\selectfont}
+\renewcommand{\large}{\fontsize{18pt}{24pt}\selectfont}
+\renewcommand{\Large}{\fontsize{20pt}{28pt}\selectfont}
+\normalsize
+\setlength{\parindent}{1.25cm}
+\setlength{\parskip}{2pt}
+\setlength{\emergencystretch}{3em}
+\sloppy
+\setlist{itemsep=1pt,topsep=3pt,parsep=0pt}
+
+% ---------- ชื่อภาษาไทย ----------
+\renewcommand{\contentsname}{สารบัญ}
+\renewcommand{\listfigurename}{สารบัญรูป}
+\renewcommand{\listtablename}{สารบัญตาราง}
+\renewcommand{\bibname}{เอกสารอ้างอิง}
+\renewcommand{\figurename}{รูปที่}
+\renewcommand{\tablename}{ตารางที่}
+\renewcommand{\appendixname}{ภาคผนวก}
+
+% ---------- หัวข้อ: บทอยู่กึ่งกลาง ตัวหนา; หัวข้อย่อยชิดซ้าย ----------
+\titleformat{\chapter}[block]{\centering\bfseries\Large}{บทที่ \thechapter}{0.6em}{}
+\titlespacing*{\chapter}{0pt}{0pt}{16pt}
+\titleformat{\section}{\bfseries\large}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{14pt}{4pt}
+\titleformat{\subsection}{\bfseries\normalsize}{\thesubsection}{0.6em}{}
+\titlespacing*{\subsection}{0pt}{10pt}{3pt}
+\titleformat{\subsubsection}{\bfseries\normalsize}{\thesubsubsection}{0.6em}{}
+\titlespacing*{\subsubsection}{0pt}{8pt}{2pt}
+% บทที่ไม่มีเลขบท (บทคัดย่อ ฯลฯ)
+\newcommand{\frontchapter}[1]{\clearpage\begin{center}\bfseries\Large #1\end{center}\vspace{6pt}}
+
+% ---------- คำบรรยาย: ตารางอยู่บนตาราง, รูปอยู่ใต้รูป ----------
+\captionsetup{font=small,labelfont=bf,textfont=bf,labelsep=space,skip=6pt}
+\captionsetup[table]{position=above}
+\captionsetup[figure]{position=below}
+
+% ---------- สารบัญ: บทตัวหนา มีจุดไข่ปลา ----------
+\renewcommand{\cftchapfont}{\bfseries}
+\renewcommand{\cftchappagefont}{\bfseries}
+\renewcommand{\cftchappresnum}{บทที่ }
+\setlength{\cftchapnumwidth}{4.6em}
+\renewcommand{\cftchapleader}{\bfseries\cftdotfill{\cftdotsep}}
+\setlength{\cftbeforechapskip}{6pt}
+\setlength{\cftsecindent}{1.5em}\setlength{\cftsecnumwidth}{2.6em}
+\setlength{\cftsubsecindent}{4em}\setlength{\cftsubsecnumwidth}{3.4em}
+\setlength{\cftsubsubsecindent}{7.4em}\setlength{\cftsubsubsecnumwidth}{4.2em}
+\setlength{\cftfigindent}{0pt}\setlength{\cftfignumwidth}{4.5em}
+\setlength{\cfttabindent}{0pt}\setlength{\cfttabnumwidth}{5.2em}
+\renewcommand{\cftfigpresnum}{รูปที่ }
+\renewcommand{\cfttabpresnum}{ตารางที่ }
+\setcounter{tocdepth}{3}
+% ชื่อ สารบัญ / สารบัญตาราง / สารบัญรูป อยู่กึ่งกลาง
+\renewcommand{\cfttoctitlefont}{\hfill\bfseries\Large}
+\renewcommand{\cftaftertoctitle}{\hfill}
+\renewcommand{\cftlottitlefont}{\hfill\bfseries\Large}
+\renewcommand{\cftafterlottitle}{\hfill}
+\renewcommand{\cftloftitlefont}{\hfill\bfseries\Large}
+\renewcommand{\cftafterloftitle}{\hfill}
+
+% ---------- เลขหน้า: ส่วนหน้าเป็นพยัญชนะไทย (ก ข ค …), ส่วนเนื้อหาเป็นเลขอารบิก ----------
+\newcommand{\thaiconsonant}[1]{\ifcase#1\or ก\or ข\or ค\or ง\or จ\or ฉ\or ช\or ซ\or ฌ\or ญ\or ฎ\or ฏ\or ฐ\or ฑ\or ฒ\or ณ\or ด\or ต\or ถ\or ท\or ธ\or น\or บ\or ป\or ผ\or ฝ\or พ\or ฟ\or ภ\or ม\or ย\or ร\or ล\or ว\or ศ\or ษ\or ส\or ห\or ฬ\or อ\or ฮ\fi}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[R]{\small\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\fancypagestyle{plain}{\fancyhf{}\fancyhead[R]{\small\thepage}\renewcommand{\headrulewidth}{0pt}}
+
+% ตัวช่วยสำหรับร่างที่ยังไม่เขียน
+\newcommand{\draftnote}[1]{\par\noindent{\color{gray}\itshape [ร่าง — #1]}\par}
+
+\input{meta}
+
+\begin{document}
+\input{front}
+
+% ================= เนื้อหา =================
+\clearpage\pagenumbering{arabic}
+\input{chapters/ch1}
+\input{chapters/ch2}
+\input{chapters/ch3}
+\input{chapters/ch4}
+\input{chapters/ch5}
+\input{chapters/ch6}
+
+\begin{thebibliography}{99}
+\input{chapters/refs}
+\end{thebibliography}
+
+\input{chapters/appendix}
+
+\end{document}
