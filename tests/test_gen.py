@@ -80,3 +80,16 @@ def test_single_domain_graph_needs_require_cross_false():
     with pytest.raises(ValueError, match="no cross-domain edge"):
         validate_structure(G)
     validate_structure(G, require_cross=False)
+
+
+def test_git_rev_flags_uncommitted_code(tmp_path, monkeypatch):
+    import subprocess
+    from attackpath import results
+    run = lambda *a: subprocess.run(a, cwd=tmp_path, check=True, capture_output=True)
+    run("git", "init", "-q"); run("git", "config", "user.email", "t@t"); run("git", "config", "user.name", "t")
+    (tmp_path / "attackpath").mkdir(); (tmp_path / "attackpath" / "x.py").write_text("a=1\n")
+    run("git", "add", "."); run("git", "commit", "-qm", "c")
+    monkeypatch.chdir(tmp_path)
+    assert not results.git_rev().endswith("+dirty")
+    (tmp_path / "attackpath" / "x.py").write_text("a=2\n")
+    assert results.git_rev().endswith("+dirty")

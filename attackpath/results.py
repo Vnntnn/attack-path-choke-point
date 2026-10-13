@@ -1,9 +1,12 @@
 """One locked row schema for every experiment CSV.
 
 Fixed up front on purpose: a missing `seed` or `n_entries` column is only
-discovered after 540 graphs have been generated, and then the run is worthless
-(every simulated graph carries a fixed seed, recorded on every row).
+discovered after 540 graphs have been generated, and then the run is worthless.
+Every simulated graph must carry a fixed seed, recorded on every row, so it
+can be regenerated later.
 
+Deliberately minimal: a csv.DictWriter with a required prefix, not a results
+framework.
 """
 from __future__ import annotations
 
@@ -19,10 +22,19 @@ COMMON = ["exp", "graph_id", "seed", "n_requested", "n_nodes", "n_edges",
           "cve_pool_size", "epss_snapshot", "git_rev", "ts"]
 
 
+CODE_PATHS = ["attackpath", "experiments", "scripts", "pyproject.toml", "uv.lock"]
+
+
 def git_rev() -> str:
+    """HEAD, plus '+dirty' when the code that produces results has uncommitted
+    changes (results/ itself is excluded: every run modifies it). Without this a
+    row claims a commit whose code never produced it."""
     try:
-        return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"],
-                                       text=True).strip()
+        rev = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"],
+                                      text=True).strip()
+        dirty = subprocess.check_output(
+            ["git", "status", "--porcelain", "--", *CODE_PATHS], text=True).strip()
+        return rev + ("+dirty" if dirty else "")
     except Exception:
         return "unknown"
 
