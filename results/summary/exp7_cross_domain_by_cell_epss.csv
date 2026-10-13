@@ -1,0 +1,10 @@
+cross_density,segmentation,cheapest_cross_share,cross_required_share,cheapest_cross_share_onprem_target,cross_required_share_onprem_target,cheapest_cross_share_cloud_target,n_cross_edges
+high,3tier,0.649,0.642,0.04,0.008,1.0,14.875
+high,flat,0.656,0.639,0.053,0.0,1.0,14.75
+high,micro,0.819,0.765,0.569,0.38,1.0,15.208
+low,3tier,0.64,0.639,0.005,0.0,1.0,4.583
+low,flat,0.64,0.639,0.005,0.0,1.0,4.083
+low,micro,0.748,0.733,0.354,0.292,1.0,4.5
+med,3tier,0.667,0.64,0.099,0.005,1.0,7.625
+med,flat,0.649,0.639,0.03,0.0,1.0,7.333
+med,micro,0.764,0.75,0.417,0.375,1.0,8.0
