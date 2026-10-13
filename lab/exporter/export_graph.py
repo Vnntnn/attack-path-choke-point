@@ -1,6 +1,6 @@
-"""Cartography's Neo4j graph -> attackpath's edge-list schema (strict
-rule: the analyzer never touches Neo4j, so this is the one place in the lab
-phase that's allowed to import a Neo4j driver).
+"""Cartography's Neo4j graph -> attackpath's edge-list schema. The analyzer
+never touches Neo4j directly, so this exporter is the one place in the lab
+phase that's allowed to import a Neo4j driver.
 
 Every edge below is backed by a Cypher read against data Cartography actually
 synced from LocalStack (see lab/README.md for the queries and what each one
@@ -70,16 +70,31 @@ def _fetch_access_key_owners(session) -> dict[str, str]:
 
 def _add_onprem_chain(g: "G.nx.DiGraph", entry, session) -> None:
     """On-prem chain: internet -> dmz-host -> internal-host (flat network, no
-    segmentation) -> cloud identity, added only if nmap confirms both hosts
-    are actually reachable AND the access key id read off internal-host's
-    filesystem matches one Cartography discovered independently on the
-    cloud side. Two sources agreeing is the correlation; either one alone
-    is not."""
+    segmentation) -> real shell on internal-host (weak SSH root password,
+    cracked live) -> cloud identity, added only if nmap confirms both hosts
+    are reachable, the SSH crack actually succeeds, AND the access key id
+    read off internal-host's filesystem matches one Cartography discovered
+    independently on the cloud side.
+
+    The SSH-crack step exists because `aws-key-on-host`'s own rubric entry
+    gives it CVSS `PR:L` -- it prices "attacker already has a shell", not
+    "attacker is merely on the same network segment". Reachability
+    edges alone (internet-facing-host, flat-vlan-no-segmentation) only ever
+    move the attacker between `anon` states; without a real privilege-gained
+    edge in between, `aws-key-on-host` would be reading a root-owned file with
+    a source node that never held a shell at all."""
     dmz_ip = onprem.docker_ip(onprem.DMZ_CONTAINER)
     internal_ip = onprem.docker_ip(onprem.INTERNAL_CONTAINER)
     open_ports = onprem.nmap_open_ports([dmz_ip, internal_ip])
     if 22 not in open_ports.get(dmz_ip, set()) or 22 not in open_ports.get(internal_ip, set()):
         raise RuntimeError(f"nmap did not find ssh open on both on-prem hosts: {open_ports}")
+
+    cracked_password = onprem.crack_ssh_weak_password(internal_ip)
+    if cracked_password is None:
+        raise RuntimeError(
+            f"ssh weak-credential dictionary attack against {internal_ip} failed -- "
+            "no shell gained, no privilege-escalation edge, no path to aws-key-on-host"
+        )
 
     leaked_key_id = onprem.read_leaked_access_key_id()
     cloud_keys = _fetch_access_key_owners(session)
@@ -92,13 +107,16 @@ def _add_onprem_chain(g: "G.nx.DiGraph", entry, session) -> None:
 
     dmz_node = (f"host:{onprem.DMZ_CONTAINER}", "anon")
     internal_node = (f"host:{onprem.INTERNAL_CONTAINER}", "anon")
+    internal_root_node = (f"host:{onprem.INTERNAL_CONTAINER}", "root")
     user_node = (f"user:{owner}", "admin")
 
     G.add_edge(g, entry, dmz_node,
                 kind="deterministic", ref="internet-facing-host", domain="onprem")
     G.add_edge(g, dmz_node, internal_node,
                 kind="deterministic", ref="flat-vlan-no-segmentation", domain="onprem")
-    G.add_edge(g, internal_node, user_node,
+    G.add_edge(g, internal_node, internal_root_node,
+                kind="misconfig", ref="weak-ssh-credentials", domain="onprem")
+    G.add_edge(g, internal_root_node, user_node,
                 kind="misconfig", ref="aws-key-on-host", domain="cross")
     g.nodes[user_node]["target"] = True
 
@@ -122,7 +140,7 @@ def build_graph(session, seed: int, include_onprem: bool = True) -> "G.nx.DiGrap
         G.add_edge(g, entry, attacker_seat,
                     kind="deterministic", ref="attacker-controlled-account", domain="cloud")
         G.add_edge(g, attacker_seat, role_node,
-                    kind="misconfig", ref="iam-trust-missing-external-id", domain="cross")
+                    kind="misconfig", ref="iam-trust-missing-external-id", domain="cloud")
         target = role_node
 
     if target is None:
@@ -155,7 +173,7 @@ def main() -> None:
         g = build_graph(session, args.seed, include_onprem=not args.skip_onprem)
     driver.close()
 
-    G.validate_structure(g)
+    G.validate_structure(g, require_cross=not args.skip_onprem)
     G.save_json(g, args.out_json)
     G.to_csv(g, args.out_csv)
     print(f"nodes={g.number_of_nodes()} edges={g.number_of_edges()} "
