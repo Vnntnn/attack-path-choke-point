@@ -1,6 +1,130 @@
 \newcommand{\appchap}[2]{\clearpage\phantomsection\addcontentsline{toc}{chapter}{ภาคผนวก #1 #2}%
   \begin{center}\bfseries\Large ภาคผนวก #1\\[2pt] #2\end{center}\vspace{6pt}}
-\appchap{ก}{ตาราง Rubric ของ misconfiguration}\draftnote{}
-\appchap{ข}{สคีมา edge list}\draftnote{}
-\appchap{ค}{วิธีทำซ้ำผลการทดลอง}\draftnote{}
-\appchap{ง}{ความแตกต่างจากข้อเสนอโครงงาน (Deviation log)}\draftnote{GNS3, Nessus, AWS จริง, จำนวนกราฟ}
+
+\appchap{ก}{ตาราง Rubric ของ misconfiguration}
+
+ตารางนี้สกัดโดยตรงจาก \texttt{docs/MISCONFIG\_RUBRIC.md} (18 แถว, ตรวจสอบด้วย
+\texttt{scripts/build\_vectors.py --check} และ \texttt{scripts/calibrate\_rubric.py})
+รายละเอียดเหตุผลรายเมตริกและอ้างอิง CWE/CIS เต็มรูปแบบของแต่ละแถวอยู่ในไฟล์ต้นฉบับ
+คอลัมน์ \texttt{conf} คือความมั่นใจของการกำหนดเวกเตอร์ (ไม่ได้ควบคุมขนาด perturbation
+ในโค้ด -- ดูหัวข้อ 3.3) แถวที่มี \texttt{conf=low} (\texttt{ssrf-imdsv1-token},
+\texttt{smb-signing-disabled}) คือ CVSS cell ที่มี CVE จริงรองรับน้อยกว่า 10 รายการ
+(\texttt{scripts/calibrate\_rubric.py}, ตรวจสอบ 2026-10-13)
+
+\begin{longtable}{llll}
+\caption{Rubric ของ misconfiguration ทั้ง 18 class}\label{tab:rubric-full} \\
+\toprule
+slug & เวกเตอร์ CVSS v3.1 & p\_source & conf \\
+\midrule
+\endfirsthead
+\toprule
+slug & เวกเตอร์ CVSS v3.1 & p\_source & conf \\
+\midrule
+\endhead
+\texttt{\scriptsize s3-public-read} & \texttt{\tiny AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N} & fitted & high \\
+\texttt{\scriptsize s3-public-write} & \texttt{\tiny AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H} & fitted & med \\
+\texttt{\scriptsize iam-trust-wildcard-principal} & \texttt{\tiny AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H} & fitted & high \\
+\texttt{\scriptsize iam-trust-missing-external-id} & \texttt{\tiny AV:N/AC:H/PR:L/UI:N/S:C/C:H/I:H/A:H} & fitted & med \\
+\texttt{\scriptsize iam-passrole-excess-privilege} & \texttt{\tiny AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H} & fitted & high \\
+\texttt{\scriptsize aws-key-on-host} & \texttt{\tiny AV:L/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H} & fitted & high \\
+\texttt{\scriptsize ssrf-imdsv1-token} & \texttt{\tiny AV:A/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H} & fitted & low \\
+\texttt{\scriptsize sg-open-mgmt-port} & \texttt{\tiny AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N} & deterministic & high \\
+\texttt{\scriptsize flat-vlan-no-segmentation} & \texttt{\tiny AV:A/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N} & deterministic & high \\
+\texttt{\scriptsize shared-local-admin-password} & \texttt{\tiny AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H} & fitted & high \\
+\texttt{\scriptsize smb-signing-disabled} & \texttt{\tiny AV:A/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N} & fitted & low \\
+\texttt{\scriptsize unauth-internal-service} & \texttt{\tiny AV:A/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H} & fitted & high \\
+\texttt{\scriptsize cicd-oidc-broad-sub} & \texttt{\tiny AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H} & fitted & med \\
+\texttt{\scriptsize stale-service-account-cred} & \texttt{\tiny AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H} & fitted & med \\
+\texttt{\scriptsize vpn-dx-to-private-subnet} & \texttt{\tiny AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N} & deterministic & high \\
+\texttt{\scriptsize federated-identity-trust} & \texttt{\tiny AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:N} & deterministic & high \\
+\texttt{\scriptsize federated-group-overbroad-role} & \texttt{\tiny AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H} & fitted & med \\
+\texttt{\scriptsize weak-ssh-credentials} & \texttt{\tiny AV:A/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H} & fitted & high \\
+\bottomrule
+\end{longtable}
+
+\appchap{ข}{สคีมา edge list}
+
+ไฟล์กราฟ (ทั้งจำลองและจาก lab) ใช้สคีมาเดียวกัน ไม่ว่าจะเก็บเป็น JSON (node-link format
+ของ networkx) หรือ CSV แบบเรียบ (\texttt{attackpath/graph.py}) node คือคู่
+\texttt{(resource, privilege)} เก็บเป็น tuple สองช่อง edge หนึ่งแถวมีคอลัมน์ดังนี้:
+
+\begin{longtable}{p{3.3cm}p{3.3cm}p{6.4cm}}
+\toprule
+คอลัมน์ & ชนิดค่า & ความหมาย \\
+\midrule
+\endfirsthead
+\toprule
+คอลัมน์ & ชนิดค่า & ความหมาย \\
+\midrule
+\endhead
+\texttt{\scriptsize src\_resource,\newline src\_priv} & string & node ต้นทาง (resource, privilege) \\
+\texttt{\scriptsize dst\_resource,\newline dst\_priv} & string & node ปลายทาง \\
+\texttt{kind} & \texttt{\scriptsize cve, misconfig,\newline deterministic} & ชนิดของ edge \\
+\texttt{ref} & string & รหัส CVE หรือ slug ของ misconfig class \\
+\texttt{domain} & \texttt{\scriptsize onprem, cloud,\newline cross} & โดเมนของ edge \\
+\texttt{p} & float $\in (0,1]$ & ความน่าจะเป็นที่กำหนดโดย \texttt{weights.assign()} \\
+\texttt{p\_source} & \texttt{\scriptsize epss, fitted,\newline deterministic,\newline expert} & แหล่งที่มาของ \texttt{p} \\
+\texttt{p\_input} & string & ค่าที่ใช้คำนวณ \texttt{p} ตรง ๆ (เช่น \texttt{epss:CVE-...}
+หรือ \texttt{cvss:AV:N/...}) \\
+\bottomrule
+\end{longtable}
+
+node ที่เป็น entry หรือ target ถูกทำเครื่องหมายผ่านแอตทริบิวต์ \texttt{entry}/\texttt{target}
+บน node นั้นโดยตรง (ไม่ใช่คอลัมน์ของ edge) \texttt{graph.validate\_structure()} ตรวจสอบ
+ว่าทุก node เป็น tuple สองช่อง, ทุก edge มี \texttt{kind}/\texttt{domain}/\texttt{ref} ครบ,
+กราฟแบบ hybrid มี edge ที่ \texttt{domain="cross"} อย่างน้อยหนึ่งเส้น และทุกคู่
+(entry, target) ไปถึงกันได้ ส่วน \texttt{graph.validate\_weights()} ตรวจว่าทุก edge มี
+\texttt{p\_source} ที่ถูกต้องและ \texttt{p} อยู่ในช่วง $(0,1]$
+
+\appchap{ค}{วิธีทำซ้ำผลการทดลอง}
+
+\begin{enumerate}[leftmargin=1.6em]
+\item ติดตั้ง \texttt{uv} แล้ว \texttt{uv sync} ที่รากโปรเจกต์ (ใช้ Python 3.13 เท่านั้น)
+\item ดึงข้อมูล EPSS + NVD: \texttt{uv run python scripts/pull\_data.py} (แคชลงดิสก์
+ถาวรใน \texttt{data/raw/}, รันซ้ำได้โดยไม่ดึงใหม่)
+\item fit ฟังก์ชัน CVSS$\to$EPSS: \texttt{uv run --group fit scripts/fit\_weights.py}
+(ต้องมี \texttt{data/fit/cvss\_epss\_joined.csv} จากขั้นก่อน)
+\item รันกริดการทดลองเต็ม (216 โครงสร้าง $\times$ 4 โมเดลน้ำหนัก):
+\texttt{uv run python experiments/run.py --jobs 8} (ใช้เวลาประมาณ 30--35 นาที
+ปฏิเสธรันถ้ามีไฟล์ \texttt{results/exp*.csv} เดิมอยู่แล้ว -- เติม \texttt{--force} เพื่อลบก่อน)
+\item รัน exp 6 แยกต่างหาก: \texttt{uv run python -m experiments.exp6\_fit\_error}
+\item สร้างตารางสรุปและกราฟ: \texttt{uv run --group report experiments/analyze.py}
+(เขียน \texttt{results/SUMMARY.md}, \texttt{results/summary/*.csv},
+\texttt{results/figures/*.png})
+\item ตรวจสอบตัวเลขในเอกสารกับผลจริง: \texttt{uv run python scripts/check\_claims.py}
+\item รันชุดทดสอบทั้งหมด: \texttt{uv run pytest -q}
+\item ทำซ้ำ lab จริง: ดูขั้นตอนเต็มใน \texttt{lab/README.md} (ต้องมี Docker; LocalStack
+และ Neo4j รีสตาร์ตแล้วต้อง \texttt{terraform apply} ใหม่เสมอเพราะ LocalStack community
+ไม่เก็บ state ข้ามการรีสตาร์ต)
+\end{enumerate}
+
+กราฟจำลองทุกกราฟอ้างอิง seed และ \texttt{cve\_pool\_size}/\texttt{epss\_snapshot} ที่
+บันทึกไว้ในแถวผลลัพธ์ทุกแถว การทำซ้ำกราฟชุดเดียวกันทุกบิตต้องใช้ snapshot ข้อมูลชุด
+เดียวกันกับที่ระบุไว้ (EPSS snapshot วันที่ 2026-08-25, NVD 33 หน้า) ไม่ใช่แค่ seed อย่างเดียว
+
+\appchap{ง}{ความแตกต่างจากข้อเสนอโครงงาน (Deviation log)}
+
+รายการนี้สรุปทุกจุดที่ผลงานจริงต่างจากที่เสนอไว้ พร้อมเหตุผลของแต่ละจุด
+
+\begin{itemize}[leftmargin=1.6em]
+\item \textbf{GNS3 $\to$ เครือข่าย Docker ธรรมดา} \texttt{gns3} ที่มีในเครื่องเป็นเพียง GUI
+client ต้องมี display และ \texttt{gns3server} backend แยกต่างหาก ซึ่งรันแบบ headless
+ไม่ได้ในสภาพแวดล้อมนี้ \texttt{docker-compose} สองโฮสต์บนเครือข่าย flat เดียวกันให้
+คุณสมบัติ reachability แบบเดียวกับที่ GNS3 จะจำลอง และตัวเครือข่าย flat เองก็\emph{คือ}
+ตัว misconfig \texttt{flat-vlan-no-segmentation} ที่ต้องจำลองอยู่แล้ว
+\item \textbf{Nessus $\to$ nmap} ไม่มีรหัส activation ของ Nessus Essentials
+ลองใช้ OpenVAS เป็นทางเลือกแรกแต่ล้มเหลวเพราะพื้นที่ดิสก์ไม่พอสำหรับฐานข้อมูล
+ช่องโหว่ที่แถมมา (ไม่ใช่ปัญหา license) จึงเปลี่ยนเป็น \texttt{nmap} ซึ่งให้ข้อมูลการเข้าถึง
+พอร์ตเท่านั้น ไม่มี CVE เลย -- ผลคือกราฟ lab ไม่มี edge ชนิด \texttt{cve} แม้แต่เส้นเดียว
+ข้อจำกัดนี้เหมือนกันไม่ว่าจะเลือก OpenVAS แบบไม่มี feed หรือ nmap
+\item \textbf{AWS จริง $\to$ LocalStack} ทดลองจริงบนบัญชี AWS Academy Learner Lab
+แล้วพบว่า \texttt{iam:CreateRole}/\texttt{iam:CreateUser} ถูกบล็อกไม่มีเงื่อนไข (ข้อจำกัด
+ของบัญชีประเภทนี้โดยเจตนา) และ \texttt{s3:GetBucketObjectLockConfiguration} ถูก
+บล็อกด้วย SCP ระดับองค์กรที่แก้จาก Terraform ไม่ได้ เพราะ misconfig ทุกคลาสในโครงงาน
+นี้พึ่งการสร้าง IAM resource ล้วน การรันบน LocalStack จึงไม่ใช่ทางเลือกที่ถูกกว่าเฉย ๆ
+แต่เป็นทางเลือกเดียวที่ทำได้จริงบนบัญชีประเภทนี้
+\item \textbf{จำนวนกราฟ: 200 กราฟตามข้อเสนอ $\to$ 216 โครงสร้าง (864 กราฟถ่วงน้ำหนัก)}
+ข้อเสนอระบุ ``อย่างน้อย 200 กราฟ'' กริดสุดท้ายมี 216 โครงสร้างที่แตกต่างกัน (27 เซลล์
+ปัจจัย $\times$ 8 ซ้ำ) ซึ่งเกินขั้นต่ำแม้นับเฉพาะโครงสร้างก่อนคูณด้วยโมเดลน้ำหนัก กริด
+ก่อนหน้า (135 โครงสร้าง) ถูกแทนที่เพราะนับโครงสร้างได้ไม่ถึง 200
+\end{itemize}
