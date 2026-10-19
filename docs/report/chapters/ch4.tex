@@ -1,6 +1,6 @@
-\chapter{การพัฒนาระบบ}
+\chapter{เนื้องาน}\label{ch:impl}
 
-\section{โครงสร้างโปรเจกต์}
+\section{โครงสร้างโปรเจกต์}\label{sec:impl-structure}
 
 โค้ดทั้งหมดเขียนด้วย Python 3.13 บริหารจัดการ dependency ด้วย \texttt{uv}
 แบ่งเป็นห้าส่วนตามหน้าที่:
@@ -9,16 +9,16 @@
 \item \texttt{attackpath/} -- แพ็กเกจหลัก: โมเดลกราฟ (\texttt{graph.py}), ตัวสร้างกราฟจำลอง
 (\texttt{gen.py}), การให้น้ำหนัก (\texttt{weights.py}), ตัววิเคราะห์จุดตัด
 (\texttt{chokepoints.py}), การทดสอบความทนทาน (\texttt{robustness.py}) และสคีมา
-ผลลัพธ์ (\texttt{results.py}) -- ไม่พึ่ง Neo4j เลยแม้แต่บรรทัดเดียว (หัวข้อ 4.3)
+ผลลัพธ์ (\texttt{results.py}) -- ไม่พึ่ง Neo4j เลยแม้แต่บรรทัดเดียว (หัวข้อ~\ref{sec:impl-analyzer})
 \item \texttt{experiments/} -- ตัวขับเคลื่อนการทดลองทั้งเจ็ดชุด (\texttt{run.py}), การ
 วิเคราะห์ผลเป็นตารางและกราฟ (\texttt{analyze.py}) และ exp 6 ที่แยกสคริปต์ต่างหาก
 \item \texttt{scripts/} -- ท่อประมวลผลข้อมูล (ดึง EPSS/NVD, fit, ตรวจสอบ rubric, ตรวจสอบ
 คำกล่าวอ้างในเอกสาร)
 \item \texttt{lab/} -- Terraform, docker-compose ของ on-prem และตัว export จาก Neo4j
-\item \texttt{tests/} -- ชุดทดสอบ 70 ไฟล์ย่อย (หัวข้อ 4.6)
+\item \texttt{tests/} -- ชุดทดสอบ 70 ไฟล์ย่อย (หัวข้อ~\ref{sec:impl-tests})
 \end{itemize}
 
-\section{ท่อประมวลผลข้อมูลและการ fit}
+\section{ท่อประมวลผลข้อมูลและการ fit}\label{sec:impl-pipeline}
 
 ข้อมูลที่ใช้ fit ฟังก์ชัน CVSS$\to$EPSS มาจากการดึงสองแหล่งแล้ว join กัน (\texttt{scripts/
 pull\_data.py}): คะแนน EPSS ทั้งหมด ณ วันที่กำหนด (ไฟล์ snapshot จาก
@@ -28,19 +28,19 @@ pull\_data.py}): คะแนน EPSS ทั้งหมด ณ วันที�
 ก่อนปี 2016 ออก (ปีที่ CVSS v3 เริ่มใช้งานจริงอย่างเป็นระบบ) เหลือ 46{,}360 รายการที่
 เข้า fit (\texttt{scripts/fit\_weights.py}) โมเดลที่ใช้ตั้งราคา edge จริงคือการถดถอยเชิงเส้น
 จาก 8 ตัวแปรของ CVSS (AV/AC/PR/UI/S/C/I/A แบบ one-hot) ในสเกล logit ของ EPSS
-ซึ่งให้ค่าสัมประสิทธิ์ที่ตรวจสอบย้อนกลับได้ทีละตัวแปร (ภาคผนวก ข)
+ซึ่งให้ค่าสัมประสิทธิ์ที่ตรวจสอบย้อนกลับได้ทีละตัวแปร
 
-\section{ตัววิเคราะห์จุดตัด}
+\section{ตัววิเคราะห์จุดตัด}\label{sec:impl-analyzer}
 
 ตัววิเคราะห์ (\texttt{chokepoints.py}, \texttt{robustness.py}) อ่านกราฟจากไฟล์ edge list
 ธรรมดา (JSON หรือ CSV) เท่านั้น ไม่เรียก Neo4j driver แม้แต่บรรทัดเดียว เพื่อให้กราฟจำลอง
 และกราฟจาก lab จริงไหลผ่านโค้ดวิเคราะห์ตัวเดียวกันโดยไม่ต้องแก้โค้ด (ซึ่งเป็นเงื่อนไขของ
-วัตถุประสงค์ข้อ 5: ต้องพิสูจน์ว่าโมเดลใช้กับระบบจริงได้ ไม่ใช่ใช้ได้เฉพาะข้อมูลที่ออกแบบมาเอง)
+วัตถุประสงค์ข้อ 5 (หัวข้อ~\ref{sec:intro-objectives}): ต้องพิสูจน์ว่าโมเดลใช้กับระบบจริงได้ ไม่ใช่ใช้ได้เฉพาะข้อมูลที่ออกแบบมาเอง)
 การเชื่อมต่อกับ Neo4j ทั้งหมดถูกจำกัดไว้ในเฟส lab เท่านั้น (\texttt{lab/exporter/
-export\_graph.py}) ซึ่งทำหน้าที่แปลงผลสืบค้น Cypher จาก Cartography ให้เป็น edge list
+export\_graph.py}, หัวข้อ~\ref{sec:impl-lab}) ซึ่งทำหน้าที่แปลงผลสืบค้น Cypher จาก Cartography ให้เป็น edge list
 สคีมาเดียวกับที่ตัวสร้างกราฟจำลองสร้าง
 
-\section{การทำซ้ำผลได้ (Reproducibility)}
+\section{การทำซ้ำผลได้ (Reproducibility)}\label{sec:impl-repro}
 
 กราฟจำลองทุกกราฟต้องทำซ้ำได้จาก seed เดียวกัน ซึ่งในทางปฏิบัติพบปัญหาจริงสามจุด
 ระหว่างการพัฒนาและแก้ไขแล้ว:
@@ -65,14 +65,14 @@ export\_graph.py}) ซึ่งทำหน้าที่แปลงผลส�
 \texttt{+dirty} เมื่อโค้ดที่ผลิตผลนั้นมีการแก้ไขที่ยังไม่ \texttt{commit} เพื่อไม่ให้แถวผลลัพธ์
 อ้างว่ามาจาก commit ที่ไม่ได้ผลิตมันจริง
 
-\section{Lab: Terraform, Cartography, Neo4j}
+\section{Lab: Terraform, Cartography, Neo4j}\label{sec:impl-lab}
 
 ฝั่งคลาวด์ใช้ Terraform สร้างทรัพยากรจริงบน LocalStack (community, ไม่ต้องมีบัญชี AWS
-จริง -- ดูเหตุผลในภาคผนวก ง) แล้วรัน Cartography เพื่อดึงทรัพยากรนั้นเข้า Neo4j
+จริง -- ดูเหตุผลในภาคผนวก~\ref{app:deviation}) แล้วรัน Cartography เพื่อดึงทรัพยากรนั้นเข้า Neo4j
 \texttt{lab/run\_sync.py} ครอบ CLI ของ Cartography ไว้ชั้นหนึ่งเพื่อ monkeypatch เฉพาะ
 ฟังก์ชันเดียว (\texttt{iam.sync\_service\_last\_accessed\_details}) ที่ LocalStack community
 ไม่รองรับและทำให้ทั้งขั้นตอนค้าง -- ไม่ใช่การเขียน collector ขึ้นใหม่แทน Cartography
-ซึ่งอยู่นอกขอบเขตของโครงงาน (หัวข้อ 1.4)
+ซึ่งอยู่นอกขอบเขตของโครงงาน (หัวข้อ~\ref{sec:intro-scope})
 
 ฝั่ง on-prem จำลองด้วย \texttt{docker-compose} สองเครื่องบนเครือข่าย flat เดียวกัน
 (ซึ่ง\emph{คือ}ตัว misconfig \texttt{flat-vlan-no-segmentation} เอง ไม่ใช่ทางลัดข้ามการ
@@ -85,11 +85,11 @@ edge ข้ามโดเมนเส้นเดียวของกราฟ
 \emph{สองแหล่งอิสระ}ที่ตรงกัน: รหัส access key ที่อ่านจากไฟล์บนคอนเทนเนอร์ on-prem จริง
 ต้องตรงกับ \texttt{AccountAccessKey} node ที่ Cartography ค้นพบเองจากฝั่งคลาวด์ หาก
 ไม่ตรงกัน \texttt{export\_graph.py} จะปฏิเสธสร้าง edge นั้นทันที (ทดสอบแล้วด้วยการแก้ไข
-รหัสบนโฮสต์ให้ไม่ตรงกับฝั่งคลาวด์โดยตั้งใจ -- ดูหัวข้อ 5.9) ออกแบบเช่นนี้เพื่อให้ edge
+รหัสบนโฮสต์ให้ไม่ตรงกับฝั่งคลาวด์โดยตั้งใจ -- ดูหัวข้อ~\ref{sec:eval-lab}) ออกแบบเช่นนี้เพื่อให้ edge
 ข้ามโดเมนเป็นการค้นพบที่เกิดจากข้อมูลจริงสองฝั่งเห็นพ้องกัน ไม่ใช่ข้อเท็จจริงที่ปลูกไว้
 ฝ่ายเดียวแล้วอ้างว่าเป็นการค้นพบ
 
-\section{การทดสอบซอฟต์แวร์}
+\section{การทดสอบซอฟต์แวร์}\label{sec:impl-tests}
 
 ชุดทดสอบมี 2{,}171 กรณี ผ่านทั้งหมด แบ่งเป็นสองชั้น ชั้นแรกคือเทสต์หน่วยปกติ
 (\texttt{test\_gen.py}, \texttt{test\_dominator.py}, \texttt{test\_nodecut.py},

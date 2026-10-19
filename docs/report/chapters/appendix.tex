@@ -1,13 +1,13 @@
-\newcommand{\appchap}[2]{\clearpage\phantomsection\addcontentsline{toc}{chapter}{ภาคผนวก #1 #2}%
-  \begin{center}\bfseries\Large ภาคผนวก #1\\[2pt] #2\end{center}\vspace{6pt}}
+\newcommand{\appchap}[3]{\clearpage\phantomsection\addcontentsline{toc}{chapter}{ภาคผนวก #1 #2}%
+  \begin{center}\bfseries\Large ภาคผนวก #1\\[2pt] #2\end{center}\vspace{6pt}\label{#3}}
 
-\appchap{ก}{ตาราง Rubric ของ misconfiguration}
+\appchap{ก}{ตาราง Rubric ของ misconfiguration}{app:rubric}
 
 ตารางนี้สกัดโดยตรงจาก \texttt{docs/MISCONFIG\_RUBRIC.md} (18 แถว, ตรวจสอบด้วย
 \texttt{scripts/build\_vectors.py --check} และ \texttt{scripts/calibrate\_rubric.py})
 รายละเอียดเหตุผลรายเมตริกและอ้างอิง CWE/CIS เต็มรูปแบบของแต่ละแถวอยู่ในไฟล์ต้นฉบับ
 คอลัมน์ \texttt{conf} คือความมั่นใจของการกำหนดเวกเตอร์ (ไม่ได้ควบคุมขนาด perturbation
-ในโค้ด -- ดูหัวข้อ 3.3) แถวที่มี \texttt{conf=low} (\texttt{ssrf-imdsv1-token},
+ในโค้ด -- ดูหัวข้อ~\ref{sec:design-rubric}) แถวที่มี \texttt{conf=low} (\texttt{ssrf-imdsv1-token},
 \texttt{smb-signing-disabled}) คือ CVSS cell ที่มี CVE จริงรองรับน้อยกว่า 10 รายการ
 (\texttt{scripts/calibrate\_rubric.py}, ตรวจสอบ 2026-10-13)
 
@@ -42,7 +42,7 @@ slug & เวกเตอร์ CVSS v3.1 & p\_source & conf \\
 \bottomrule
 \end{longtable}
 
-\appchap{ข}{สคีมา edge list}
+\appchap{ข}{สคีมา edge list}{app:schema}
 
 ไฟล์กราฟ (ทั้งจำลองและจาก lab) ใช้สคีมาเดียวกัน ไม่ว่าจะเก็บเป็น JSON (node-link format
 ของ networkx) หรือ CSV แบบเรียบ (\texttt{attackpath/graph.py}) node คือคู่
@@ -76,7 +76,7 @@ node ที่เป็น entry หรือ target ถูกทำเครื
 (entry, target) ไปถึงกันได้ ส่วน \texttt{graph.validate\_weights()} ตรวจว่าทุก edge มี
 \texttt{p\_source} ที่ถูกต้องและ \texttt{p} อยู่ในช่วง $(0,1]$
 
-\appchap{ค}{วิธีทำซ้ำผลการทดลอง}
+\appchap{ค}{วิธีทำซ้ำผลการทดลอง}{app:reproduce}
 
 \begin{enumerate}[leftmargin=1.6em]
 \item ติดตั้ง \texttt{uv} แล้ว \texttt{uv sync} ที่รากโปรเจกต์ (ใช้ Python 3.13 เท่านั้น)
@@ -102,7 +102,7 @@ node ที่เป็น entry หรือ target ถูกทำเครื
 บันทึกไว้ในแถวผลลัพธ์ทุกแถว การทำซ้ำกราฟชุดเดียวกันทุกบิตต้องใช้ snapshot ข้อมูลชุด
 เดียวกันกับที่ระบุไว้ (EPSS snapshot วันที่ 2026-08-25, NVD 33 หน้า) ไม่ใช่แค่ seed อย่างเดียว
 
-\appchap{ง}{ความแตกต่างจากข้อเสนอโครงงาน (Deviation log)}
+\appchap{ง}{ความแตกต่างจากข้อเสนอโครงงาน (Deviation log)}{app:deviation}
 
 รายการนี้สรุปทุกจุดที่ผลงานจริงต่างจากที่เสนอไว้ พร้อมเหตุผลของแต่ละจุด
 

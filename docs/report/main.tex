@@ -4,19 +4,18 @@
 % ---------- หน้ากระดาษ (ตามรายงานตัวอย่าง: ขอบซ้ายกว้างสำหรับเข้าเล่ม) ----------
 \usepackage[top=3.4cm,bottom=2.5cm,left=3.8cm,right=2.5cm,headheight=20pt,headsep=14pt]{geometry}
 
-% ---------- ฟอนต์ไทย: Sarabun (OFL) — ถ้าติดตั้ง TH Sarabun New ไว้ จะใช้ตัวนั้นก่อน ----------
+% ---------- ฟอนต์ไทย: TH Sarabun New (bundled ในเล่ม, GPL-2.0 + font exception) ----------
+% มาตรฐานเอกสารราชการไทย: TH Sarabun New ที่ 16pt -- ห้ามใส่ Scale เพิ่ม ขนาดจะใหญ่เกินจริง
 \usepackage{fontspec}
-% Thai line breaking: build/thai_zwsp.py puts U+200B between words; make it a break point.
+\setmainfont{THSarabunNew}[Path=fonts/,Extension=.ttf,
+  UprightFont=*,BoldFont=*-Bold,ItalicFont=*-Italic,BoldItalicFont=*-BoldItalic]
+\setmonofont{DejaVu Sans Mono}[Scale=0.78]
+% Thai line breaking: build/thai_zwsp.py puts U+200B between words as a break
+% point only -- natural width 0, NO stretch, or justification visibly spaces
+% out every Thai word (reads as garbled/broken Thai). Looser lines end with a
+% little extra white space at the margin instead; that is the correct trade.
 \catcode"200B=\active
-\protected\def^^^^200b{\hskip0pt plus 0.14em\relax}  % stretchable: spreads justification across Thai words
-\IfFontExistsTF{THSarabunNew}{%
-  \setmainfont{THSarabunNew}[BoldFont=THSarabunNew Bold,ItalicFont=THSarabunNew Italic,
-    BoldItalicFont=THSarabunNew BoldItalic,Scale=1.2]%
-}{%
-  \setmainfont{Sarabun}[Path=fonts/,Extension=.ttf,UprightFont=*-Regular,BoldFont=*-Bold,
-    ItalicFont=*-Italic,BoldItalicFont=*-BoldItalic]%
-}
-\setmonofont{DejaVu Sans Mono}[Scale=0.82]
+\protected\def^^^^200b{\hskip0pt\relax}
 
 \usepackage{graphicx,xcolor,booktabs,array,multirow,longtable,float,enumitem,setspace,amsmath}
 \usepackage{fancyhdr,titlesec,tocloft,caption,chngcntr}
@@ -107,7 +106,6 @@
 \clearpage\pagenumbering{arabic}
 \input{chapters/ch1}
 \input{chapters/ch2}
-\input{chapters/ch3}
 \input{chapters/ch4}
 \input{chapters/ch5}
 \input{chapters/ch6}

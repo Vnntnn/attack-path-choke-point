@@ -18,6 +18,22 @@
 \renewcommand{\thepage}{\thaiconsonant{\value{page}}}
 \setcounter{page}{1}
 
+% ---------- รายชื่อสมาชิกและหน้าที่ ----------
+\frontchapter{รายชื่อสมาชิกและหน้าที่}
+\setlength{\parindent}{1.25cm}
+โครงงานนี้เป็นโครงงานเดี่ยว (สมาชิก 1 คน) จัดทำและรับผิดชอบทุกส่วนโดย \Author{}
+ตามที่เสนอไว้ในข้อเสนอโครงงาน แบ่งหน้าที่เป็น 4 ส่วนดังนี้
+
+\begin{enumerate}[leftmargin=1.6em]
+\item ออกแบบโครงสร้างกราฟการโจมตีและเขียนตัวสร้างกราฟจำลอง (\texttt{attackpath/graph.py},
+\texttt{attackpath/gen.py})
+\item จัด lab จริงทั้งสองฝั่ง เครือข่ายภายในองค์กรและคลาวด์ (AWS ผ่าน LocalStack) แล้วดึง
+ข้อมูลเข้า Neo4j ด้วย Cartography
+\item ทำวิธีให้น้ำหนัก edge ที่อธิบายที่มาได้ และเขียนตัววิเคราะห์จุดตัด
+(\texttt{attackpath/weights.py}, \texttt{attackpath/chokepoints.py})
+\item ออกแบบการทดลอง วิเคราะห์ผลเชิงสถิติ และเขียนรายงานฉบับนี้
+\end{enumerate}
+
 % ---------- บทคัดย่อ ----------
 \input{abstract}
 
