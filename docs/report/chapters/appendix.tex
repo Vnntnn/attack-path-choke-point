@@ -3,13 +3,18 @@
 
 \appchap{ก}{ตาราง Rubric ของ misconfiguration}{app:rubric}
 
-ตารางนี้สกัดโดยตรงจาก \texttt{docs/MISCONFIG\_RUBRIC.md} (18 แถว, ตรวจสอบด้วย
-\texttt{scripts/build\_vectors.py --check} และ \texttt{scripts/calibrate\_rubric.py})
+ตารางนี้สกัดโดยตรงจาก \texttt{docs/MISCONFIG\_RUBRIC.md} (18 แถว) ซึ่งเป็นไฟล์ที่คนเขียน
+กำหนดเวกเตอร์ CVSS ให้แต่ละคลาสด้วยมือพร้อมอ้างอิง CWE/CIS ตรวจสอบความถูกต้อง
+สองชั้น: \texttt{scripts/build\_vectors.py --check} อ่านไฟล์นี้แล้วเทียบกับ
+\texttt{data/fit/misconfig\_vectors.json} ที่ใช้งานจริง ว่าทั้งสองไฟล์ตรงกันทุกแถวหรือไม่
+(ป้องกันไม่ให้สอง source of truth แยกออกจากกันโดยไม่มีใครสังเกต) ส่วน
+\texttt{scripts/calibrate\_rubric.py} นับว่าแต่ละ CVSS cell (ชุดค่า 8 metric ที่ซ้ำกัน) ใน
+ไฟล์ข้อมูล CVE จริงมี CVE กี่รายการรองรับ แล้วเขียนค่า \texttt{conf} กลับไปตามจำนวนนั้น
 รายละเอียดเหตุผลรายเมตริกและอ้างอิง CWE/CIS เต็มรูปแบบของแต่ละแถวอยู่ในไฟล์ต้นฉบับ
 คอลัมน์ \texttt{conf} คือความมั่นใจของการกำหนดเวกเตอร์ (ไม่ได้ควบคุมขนาด perturbation
 ในโค้ด -- ดูหัวข้อ~\ref{sec:design-rubric}) แถวที่มี \texttt{conf=low} (\texttt{ssrf-imdsv1-token},
 \texttt{smb-signing-disabled}) คือ CVSS cell ที่มี CVE จริงรองรับน้อยกว่า 10 รายการ
-(\texttt{scripts/calibrate\_rubric.py}, ตรวจสอบ 2026-10-13)
+ตามที่ \texttt{scripts/calibrate\_rubric.py} นับได้จริง (ตรวจสอบ 2026-10-13)
 
 \begin{longtable}{llll}
 \caption{Rubric ของ misconfiguration ทั้ง 18 class}\label{tab:rubric-full} \\
@@ -118,9 +123,13 @@ client ต้องมี display และ \texttt{gns3server} backend แย�
 พอร์ตเท่านั้น ไม่มี CVE เลย -- ผลคือกราฟ lab ไม่มี edge ชนิด \texttt{cve} แม้แต่เส้นเดียว
 ข้อจำกัดนี้เหมือนกันไม่ว่าจะเลือก OpenVAS แบบไม่มี feed หรือ nmap
 \item \textbf{AWS จริง $\to$ LocalStack} ทดลองจริงบนบัญชี AWS Academy Learner Lab
-แล้วพบว่า \texttt{iam:CreateRole}/\texttt{iam:CreateUser} ถูกบล็อกไม่มีเงื่อนไข (ข้อจำกัด
+แล้วพบว่า \texttt{iam:CreateRole}/\texttt{iam:CreateUser} (คำสั่งสร้าง role และ user
+ใหม่ใน IAM -- Identity and Access Management คือระบบจัดการสิทธิ์และตัวตนของ AWS
+ที่ทุก role/user/policy ของบัญชีขึ้นอยู่กับมัน) ถูกบล็อกไม่มีเงื่อนไข (ข้อจำกัด
 ของบัญชีประเภทนี้โดยเจตนา) และ \texttt{s3:GetBucketObjectLockConfiguration} ถูก
-บล็อกด้วย SCP ระดับองค์กรที่แก้จาก Terraform ไม่ได้ เพราะ misconfig ทุกคลาสในโครงงาน
+บล็อกด้วย SCP (Service Control Policy -- กฎที่ผู้ดูแลระดับองค์กรตั้งครอบทุกบัญชีลูกไว้
+ล่วงหน้า แก้ไขจากภายในบัญชีลูกเองไม่ได้เลยแม้จะมีสิทธิ์ admin ในบัญชีนั้นก็ตาม) ระดับ
+องค์กรที่แก้จาก Terraform ไม่ได้ เพราะ misconfig ทุกคลาสในโครงงาน
 นี้พึ่งการสร้าง IAM resource ล้วน การรันบน LocalStack จึงไม่ใช่ทางเลือกที่ถูกกว่าเฉย ๆ
 แต่เป็นทางเลือกเดียวที่ทำได้จริงบนบัญชีประเภทนี้
 \item \textbf{จำนวนกราฟ: 200 กราฟตามข้อเสนอ $\to$ 216 โครงสร้าง (864 กราฟถ่วงน้ำหนัก)}
