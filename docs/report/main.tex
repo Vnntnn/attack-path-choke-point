@@ -8,7 +8,8 @@
 % มาตรฐานเอกสารราชการไทย: TH Sarabun New ที่ 16pt -- ห้ามใส่ Scale เพิ่ม ขนาดจะใหญ่เกินจริง
 \usepackage{fontspec}
 \setmainfont{THSarabunNew}[Path=fonts/,Extension=.ttf,
-  UprightFont=*,BoldFont=*-Bold,ItalicFont=*-Italic,BoldItalicFont=*-BoldItalic]
+  UprightFont=*,BoldFont=*-Bold,ItalicFont=*-Italic,BoldItalicFont=*-BoldItalic,
+  WordSpace={1,0,0}]
 \setmonofont{DejaVu Sans Mono}[Scale=0.78]
 % Thai line breaking: build/thai_zwsp.py puts U+200B between words as a break
 % point only -- natural width 0, NO stretch, or justification visibly spaces
@@ -16,6 +17,27 @@
 % little extra white space at the margin instead; that is the correct trade.
 \catcode"200B=\active
 \protected\def^^^^200b{\hskip0pt\relax}
+% A handful of literal ASCII spaces survive inside Thai prose (clause breaks,
+% a space before an inline English/CVSS token) alongside the ZWSP points
+% above. Normal interword glue DOES stretch -- so on a line where ZWSP (zero
+% stretch) supplies every other break, those rare real spaces end up as the
+% ONLY elastic glue and absorb ALL of that line's justification stretch by
+% themselves, rendering as one huge gap instead of being spread thin across
+% the line (found 2026-10-21 via `pdftotext -layout` showing runs of 3+
+% spaces mid-sentence). WordSpace={1,0,0} above keeps the normal space WIDTH
+% but removes its stretch/shrink too, so it behaves like the ZWSP points
+% around it and the same "looser lines, no visible gap" trade-off applies
+% uniformly instead of concentrating on whichever real space happens to be
+% on a given line.
+%
+% Same mechanism shows up a second way: default math spacing around a
+% relation like "=" (\thickmuskip) and "," (\medmuskip) DOES stretch, so a
+% Thai line that contains inline math (e.g. $\{v : \Delta(v) = \infty\}$)
+% can dump its whole justification deficit into that one "=" sign instead,
+% rendering as one huge gap around it. Zero that stretch too, for the same
+% reason as WordSpace above.
+\thickmuskip=5mu plus 0mu minus 0mu
+\medmuskip=4mu plus 0mu minus 4mu
 
 \usepackage{graphicx,xcolor,booktabs,array,multirow,longtable,float,enumitem,setspace,amsmath}
 \usepackage{fancyhdr,titlesec,tocloft,caption,chngcntr}

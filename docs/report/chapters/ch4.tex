@@ -69,7 +69,15 @@ EPSS ทั้งหมด ณ วันที่กำหนด (ไฟล์ s
 เมื่อไม่มีทางซ่อมอื่นเหลือ) เคยเลือก node ปลายทางด้วย \texttt{next(iter(...))} บน
 ออบเจกต์ \texttt{set} ของ Python ปัญหาคือลำดับของ \texttt{set} ขึ้นกับการสุ่มแฮชสตริง
 ของ Python ต่อโปรเซส (\texttt{PYTHONHASHSEED}) ทำให้กราฟที่ใช้ seed เดียวกันกลับ
-ต่างกันได้ระหว่างสองรัน แก้ไขโดยเรียก \texttt{sorted()} ก่อนเลือกเสมอ
+ต่างกันได้ระหว่างสองรัน แก้ไขโดยเรียก \texttt{sorted()} ก่อนเลือกเสมอ:
+
+\begin{quote}\small\begin{verbatim}
+# before: order of co depends on PYTHONHASHSEED
+dst = next(x for x in co if x != e)
+
+# after: sorted() fixes the order every time
+dst = next(x for x in sorted(co) if x != e)
+\end{verbatim}\end{quote}
 \item \textbf{\texttt{hash()}} การถ่วงน้ำหนักแต่ละโมเดลเคยใช้ \texttt{seed +
 hash(model) \% 1000} เพื่อให้แต่ละโมเดลน้ำหนักได้ seed ย่อยที่ต่างกัน แต่ \texttt{hash()}
 ของสตริงใน Python สุ่มต่อโปรเซสเช่นเดียวกับปัญหาข้อแรก แก้ไขโดยเปลี่ยนไปใช้

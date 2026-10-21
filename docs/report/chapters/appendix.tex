@@ -96,6 +96,11 @@ node ที่เป็น entry หรือ target ถูกทำเครื
 \item สร้างตารางสรุปและกราฟ: \texttt{uv run --group report experiments/analyze.py}
 (เขียน \texttt{results/SUMMARY.md}, \texttt{results/summary/*.csv},
 \texttt{results/figures/*.png})
+\item สร้างรูปภาพประกอบรายงาน: \texttt{uv run --group report --group fit
+python scripts/make\_report\_figures.py} (อ่านจาก \texttt{results/summary/*.csv}
+และ \texttt{data/fit/residuals.csv} ที่สร้างไว้แล้วจากขั้นตอนก่อนหน้า เขียนตรงลง
+\texttt{docs/report/figures/} -- ต้องรันขั้นตอนนี้ใหม่ทุกครั้งที่ตัวเลขในขั้นตอนก่อนหน้า
+เปลี่ยน ไม่เช่นนั้นรูปภาพในรายงานจะไม่ตรงกับตัวเลขในตาราง)
 \item ตรวจสอบตัวเลขในเอกสารกับผลจริง: \texttt{uv run python scripts/check\_claims.py}
 \item รันชุดทดสอบทั้งหมด: \texttt{uv run pytest -q}
 \item ทำซ้ำ lab จริง: ดูขั้นตอนเต็มใน \texttt{lab/README.md} (ต้องมี Docker; LocalStack
