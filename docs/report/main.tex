@@ -47,9 +47,18 @@
 \usepackage[hidelinks,bookmarks=false,pdfpagelabels=false]{hyperref}
 
 % ---------- ขนาดตัวอักษร: เนื้อหา 16pt เหมือนรายงานตัวอย่าง ----------
-\renewcommand{\normalsize}{\fontsize{16pt}{22pt}\selectfont}
-\renewcommand{\small}{\fontsize{14pt}{19pt}\selectfont}
+% \scriptsize/\tiny were left out of this block for a while -- they kept
+% the documentclass's stock 12pt-based values (8pt/6pt) instead of scaling
+% up with everything else, so any \tiny/\scriptsize text (the CVSS-vector
+% and edge-schema tables in the appendix) rendered at roughly half the
+% size it should, and worse once \texttt's own 0.78 mono scale stacked on
+% top (measured ~4.7pt/~6.2pt in the built PDF -- found 2026-10-22 from a
+% user report that English words looked inconsistently sized).
+\renewcommand{\tiny}{\fontsize{8pt}{10pt}\selectfont}
+\renewcommand{\scriptsize}{\fontsize{10pt}{13pt}\selectfont}
 \renewcommand{\footnotesize}{\fontsize{13pt}{17pt}\selectfont}
+\renewcommand{\small}{\fontsize{14pt}{19pt}\selectfont}
+\renewcommand{\normalsize}{\fontsize{16pt}{22pt}\selectfont}
 \renewcommand{\large}{\fontsize{18pt}{24pt}\selectfont}
 \renewcommand{\Large}{\fontsize{20pt}{28pt}\selectfont}
 \normalsize
