@@ -3,18 +3,20 @@
 
 \appchap{ก}{ตาราง Rubric ของ misconfiguration}{app:rubric}
 
-ตารางนี้สกัดโดยตรงจาก \texttt{docs/MISCONFIG\_RUBRIC.md} (18 แถว) ซึ่งเป็นไฟล์ที่คนเขียน
-กำหนดเวกเตอร์ CVSS ให้แต่ละคลาสด้วยมือพร้อมอ้างอิง CWE/CIS ตรวจสอบความถูกต้อง
-สองชั้น: \texttt{scripts/build\_vectors.py --check} อ่านไฟล์นี้แล้วเทียบกับ
-\texttt{data/fit/misconfig\_vectors.json} ที่ใช้งานจริง ว่าทั้งสองไฟล์ตรงกันทุกแถวหรือไม่
-(ป้องกันไม่ให้สอง source of truth แยกออกจากกันโดยไม่มีใครสังเกต) ส่วน
+ตารางนี้สกัดโดยตรงจากเอกสาร rubric ของ misconfiguration (18 แถว) เอกสารนี้คือที่ที่คน
+กำหนดเวกเตอร์ CVSS ให้แต่ละคลาสด้วยมือ พร้อมอ้างอิง CWE/CIS กำกับไว้ มีการตรวจสอบ
+ความถูกต้องสองชั้น ชั้นแรก \texttt{scripts/build\_vectors.py --check} อ่านไฟล์นี้แล้วเทียบ
+กับ \texttt{data/fit/misconfig\_vectors.json} ที่ใช้งานจริงว่าทั้งสองไฟล์ตรงกันทุกแถวหรือ
+ไม่ ป้องกันไม่ให้สอง source of truth แยกออกจากกันโดยไม่มีใครสังเกต ชั้นที่สอง
 \texttt{scripts/calibrate\_rubric.py} นับว่าแต่ละ CVSS cell (ชุดค่า 8 metric ที่ซ้ำกัน) ใน
 ไฟล์ข้อมูล CVE จริงมี CVE กี่รายการรองรับ แล้วเขียนค่า \texttt{conf} กลับไปตามจำนวนนั้น
+
 รายละเอียดเหตุผลรายเมตริกและอ้างอิง CWE/CIS เต็มรูปแบบของแต่ละแถวอยู่ในไฟล์ต้นฉบับ
-คอลัมน์ \texttt{conf} คือความมั่นใจของการกำหนดเวกเตอร์ (ไม่ได้ควบคุมขนาด perturbation
-ในโค้ด -- ดูหัวข้อ~\ref{sec:design-rubric}) แถวที่มี \texttt{conf=low} (\texttt{ssrf-imdsv1-token},
-\texttt{smb-signing-disabled}) คือ CVSS cell ที่มี CVE จริงรองรับน้อยกว่า 10 รายการ
-ตามที่ \texttt{scripts/calibrate\_rubric.py} นับได้จริง (ตรวจสอบ 2026-10-13)
+คอลัมน์ \texttt{conf} คือความมั่นใจของการกำหนดเวกเตอร์ ไม่ได้ควบคุมขนาด perturbation
+ในโค้ดแต่อย่างใด (ดูหัวข้อ~\ref{sec:design-rubric}) แถวที่มี \texttt{conf=low}
+(\texttt{ssrf-imdsv1-token}, \texttt{smb-signing-disabled}) คือ CVSS cell ที่มี CVE
+จริงรองรับน้อยกว่า 10 รายการ ตามที่ \texttt{scripts/calibrate\_rubric.py} นับได้จริง
+(ตรวจสอบ 2026-10-13)
 
 \begin{longtable}{llll}
 \caption{Rubric ของ misconfiguration ทั้ง 18 class}\label{tab:rubric-full} \\
@@ -83,27 +85,31 @@ node ที่เป็น entry หรือ target ถูกทำเครื
 
 \appchap{ค}{วิธีทำซ้ำผลการทดลอง}{app:reproduce}
 
+ซอร์สโค้ดทั้งหมดของโครงงานนี้อยู่ที่
+\url{https://github.com/Vnntnn/Attack-path-management-and-choke-point-analysis-hybrid-infrastructure}
+
 \begin{enumerate}[leftmargin=1.6em]
-\item ติดตั้ง \texttt{uv} แล้ว \texttt{uv sync} ที่รากโปรเจกต์ (ใช้ Python 3.13 เท่านั้น)
+\item โคลน repository ข้างต้น แล้วติดตั้ง \texttt{uv} ตามด้วย \texttt{uv sync} ที่รากโปรเจกต์ (ใช้ Python 3.13 เท่านั้น)
 \item ดึงข้อมูล EPSS + NVD: \texttt{uv run python scripts/pull\_data.py} (แคชลงดิสก์
 ถาวรใน \texttt{data/raw/}, รันซ้ำได้โดยไม่ดึงใหม่)
 \item fit ฟังก์ชัน CVSS$\to$EPSS: \texttt{uv run --group fit scripts/fit\_weights.py}
 (ต้องมี \texttt{data/fit/cvss\_epss\_joined.csv} จากขั้นก่อน)
 \item รันกริดการทดลองเต็ม (216 โครงสร้าง $\times$ 4 โมเดลน้ำหนัก):
 \texttt{uv run python experiments/run.py --jobs 8} (ใช้เวลาประมาณ 30--35 นาที
-ปฏิเสธรันถ้ามีไฟล์ \texttt{results/exp*.csv} เดิมอยู่แล้ว -- เติม \texttt{--force} เพื่อลบก่อน)
+และจะปฏิเสธไม่รันถ้ามีไฟล์ \texttt{results/exp*.csv} เดิมอยู่แล้ว ต้องเติม
+\texttt{--force} เพื่อลบก่อนรันใหม่)
 \item รัน exp 6 แยกต่างหาก: \texttt{uv run python -m experiments.exp6\_fit\_error}
 \item สร้างตารางสรุปและกราฟ: \texttt{uv run --group report experiments/analyze.py}
-(เขียน \texttt{results/SUMMARY.md}, \texttt{results/summary/*.csv},
+(เขียนตารางสรุปผล, \texttt{results/summary/*.csv},
 \texttt{results/figures/*.png})
 \item สร้างรูปภาพประกอบรายงาน: \texttt{uv run --group report --group fit
 python scripts/make\_report\_figures.py} (อ่านจาก \texttt{results/summary/*.csv}
 และ \texttt{data/fit/residuals.csv} ที่สร้างไว้แล้วจากขั้นตอนก่อนหน้า เขียนตรงลง
-\texttt{docs/report/figures/} -- ต้องรันขั้นตอนนี้ใหม่ทุกครั้งที่ตัวเลขในขั้นตอนก่อนหน้า
+\texttt{docs/report/figures/} ต้องรันขั้นตอนนี้ใหม่ทุกครั้งที่ตัวเลขในขั้นตอนก่อนหน้า
 เปลี่ยน ไม่เช่นนั้นรูปภาพในรายงานจะไม่ตรงกับตัวเลขในตาราง)
 \item ตรวจสอบตัวเลขในเอกสารกับผลจริง: \texttt{uv run python scripts/check\_claims.py}
 \item รันชุดทดสอบทั้งหมด: \texttt{uv run pytest -q}
-\item ทำซ้ำ lab จริง: ดูขั้นตอนเต็มใน \texttt{lab/README.md} (ต้องมี Docker; LocalStack
+\item ทำซ้ำ lab จริง: ดูขั้นตอนเต็มในเอกสารประกอบของ \texttt{lab/} (ต้องมี Docker; LocalStack
 และ Neo4j รีสตาร์ตแล้วต้อง \texttt{terraform apply} ใหม่เสมอเพราะ LocalStack community
 ไม่เก็บ state ข้ามการรีสตาร์ต)
 \end{enumerate}
@@ -124,19 +130,21 @@ client ต้องมี display และ \texttt{gns3server} backend แย�
 ตัว misconfig \texttt{flat-vlan-no-segmentation} ที่ต้องจำลองอยู่แล้ว
 \item \textbf{Nessus $\to$ nmap} ไม่มีรหัส activation ของ Nessus Essentials
 ลองใช้ OpenVAS เป็นทางเลือกแรกแต่ล้มเหลวเพราะพื้นที่ดิสก์ไม่พอสำหรับฐานข้อมูล
-ช่องโหว่ที่แถมมา (ไม่ใช่ปัญหา license) จึงเปลี่ยนเป็น \texttt{nmap} ซึ่งให้ข้อมูลการเข้าถึง
-พอร์ตเท่านั้น ไม่มี CVE เลย -- ผลคือกราฟ lab ไม่มี edge ชนิด \texttt{cve} แม้แต่เส้นเดียว
-ข้อจำกัดนี้เหมือนกันไม่ว่าจะเลือก OpenVAS แบบไม่มี feed หรือ nmap
+ช่องโหว่ที่แถมมา (ไม่ใช่ปัญหา license) จึงเปลี่ยนเป็น \texttt{nmap} แทน ซึ่งให้ข้อมูลแค่
+การเข้าถึงพอร์ตเท่านั้น ไม่มี CVE ประกอบเลย ผลคือกราฟ lab ไม่มี edge ชนิด
+\texttt{cve} แม้แต่เส้นเดียว ข้อจำกัดนี้เหมือนกันไม่ว่าจะเลือก OpenVAS แบบไม่มี feed
+หรือ nmap
 \item \textbf{AWS จริง $\to$ LocalStack} ทดลองจริงบนบัญชี AWS Academy Learner Lab
-แล้วพบว่า \texttt{iam:CreateRole}/\texttt{iam:CreateUser} (คำสั่งสร้าง role และ user
-ใหม่ใน IAM -- Identity and Access Management คือระบบจัดการสิทธิ์และตัวตนของ AWS
-ที่ทุก role/user/policy ของบัญชีขึ้นอยู่กับมัน) ถูกบล็อกไม่มีเงื่อนไข (ข้อจำกัด
-ของบัญชีประเภทนี้โดยเจตนา) และ \texttt{s3:GetBucketObjectLockConfiguration} ถูก
-บล็อกด้วย SCP (Service Control Policy -- กฎที่ผู้ดูแลระดับองค์กรตั้งครอบทุกบัญชีลูกไว้
-ล่วงหน้า แก้ไขจากภายในบัญชีลูกเองไม่ได้เลยแม้จะมีสิทธิ์ admin ในบัญชีนั้นก็ตาม) ระดับ
-องค์กรที่แก้จาก Terraform ไม่ได้ เพราะ misconfig ทุกคลาสในโครงงาน
-นี้พึ่งการสร้าง IAM resource ล้วน การรันบน LocalStack จึงไม่ใช่ทางเลือกที่ถูกกว่าเฉย ๆ
-แต่เป็นทางเลือกเดียวที่ทำได้จริงบนบัญชีประเภทนี้
+แล้วพบปัญหาสองชั้น ชั้นแรกคือคำสั่งสร้าง role และ user ใหม่ใน IAM
+(\texttt{iam:CreateRole}/\texttt{iam:CreateUser}) ถูกบล็อกไม่มีเงื่อนไข เป็นข้อจำกัด
+ของบัญชีประเภทนี้โดยเจตนา (IAM คือ Identity and Access Management ระบบจัดการ
+สิทธิ์และตัวตนของ AWS ที่ role/user/policy ทุกตัวของบัญชีขึ้นอยู่กับมัน) ชั้นที่สองคือ
+\texttt{s3:GetBucketObjectLockConfiguration} ถูกบล็อกด้วย SCP ระดับองค์กร (Service
+Control Policy คือกฎที่ผู้ดูแลระดับองค์กรตั้งครอบทุกบัญชีลูกไว้ล่วงหน้า แก้ไขจากภายใน
+บัญชีลูกเองไม่ได้เลยแม้จะมีสิทธิ์ admin ในบัญชีนั้นก็ตาม) และแก้จาก Terraform ไม่ได้
+เช่นกัน เพราะ misconfig ทุกคลาสในโครงงานนี้พึ่งการสร้าง IAM resource ล้วน การรันบน
+LocalStack จึงไม่ใช่ทางเลือกที่ถูกกว่าเฉย ๆ แต่เป็นทางเลือกเดียวที่ทำได้จริงบนบัญชี
+ประเภทนี้
 \item \textbf{จำนวนกราฟ: 200 กราฟตามข้อเสนอ $\to$ 216 โครงสร้าง (864 กราฟถ่วงน้ำหนัก)}
 ข้อเสนอระบุ ``อย่างน้อย 200 กราฟ'' กริดสุดท้ายมี 216 โครงสร้างที่แตกต่างกัน (27 เซลล์
 ปัจจัย $\times$ 8 ซ้ำ) ซึ่งเกินขั้นต่ำแม้นับเฉพาะโครงสร้างก่อนคูณด้วยโมเดลน้ำหนัก กริด
