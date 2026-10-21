@@ -40,6 +40,18 @@
 \medmuskip=4mu plus 0mu minus 4mu
 
 \usepackage{graphicx,xcolor,booktabs,array,multirow,longtable,float,enumitem,setspace,amsmath}
+% Math mode (every $p(e)$, $\Delta(v)$, $R^2$, ...) was never given a font of
+% its own, so LaTeX fell back to its stock Computer Modern math italic/symbol
+% fonts -- a serif face that looks nothing like THSarabunNew AND renders
+% visibly bigger (measured 17.2pt against body text's 15.94pt). Every math
+% variable on every page was effectively in a third, uncoordinated font.
+% unicode-math + DejaVu Math TeX Gyre (installed on this system already,
+% and the same DejaVu family already used for \texttt -- keeps the two
+% non-Thai faces in this document related instead of adding a third,
+% unrelated one) replaces that with one consistent, explicitly-sized math
+% font instead of whatever LaTeX defaults to.
+\usepackage{unicode-math}
+\setmathfont{DejaVu Math TeX Gyre}
 \usepackage{fancyhdr,titlesec,tocloft,caption,chngcntr}
 % เลขตาราง/รูปต่อเนื่องทั้งเล่ม (รูปที่ 23, ตารางที่ 7) เหมือนรายงานตัวอย่าง
 \counterwithout{table}{chapter}
