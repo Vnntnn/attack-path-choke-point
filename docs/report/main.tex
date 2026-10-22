@@ -10,18 +10,11 @@
 \setmainfont{THSarabunNew}[Path=fonts/,Extension=.ttf,
   UprightFont=*,BoldFont=*-Bold,ItalicFont=*-Italic,BoldItalicFont=*-BoldItalic,
   WordSpace={1,0,0}]
-% DejaVu Sans Mono's regular weight draws a visibly heavier stroke than
-% THSarabunNew's regular weight at the same point size -- every \texttt{}
-% code/path/identifier in the document (hundreds of them, next to Thai
-% prose on nearly every page) read as bolder than the surrounding text even
-% though no \bfseries was ever applied (confirmed: the PDF's own embedded
-% font resource for these spans is the plain, non-bold file -- the file is
-% internally consistent, the two typefaces just don't share a visual
-% weight). Noto Sans Mono is built for cross-script harmony and has a
-% visibly lighter regular weight that sits next to Thai text without
-% looking bolder. (User-reported 2026-10-22, 2nd report after the pure
-% size fix above didn't resolve it -- this is the actual remaining cause.)
-\setmonofont{Noto Sans Mono}[Scale=0.80]
+% Code spans (\texttt) use THSarabunNew too, so Thai, English and code all
+% share one typeface. (Mono fonts -- DejaVu, Noto -- never matched its weight
+% and size; user asked 2026-10-22 for one font everywhere.)
+\setmonofont{THSarabunNew}[Path=fonts/,Extension=.ttf,
+  UprightFont=*,BoldFont=*-Bold,ItalicFont=*-Italic,BoldItalicFont=*-BoldItalic]
 % Thai line breaking: build/thai_zwsp.py puts U+200B between words as a break
 % point only -- natural width 0, NO stretch, or justification visibly spaces
 % out every Thai word (reads as garbled/broken Thai). Looser lines end with a
@@ -75,6 +68,10 @@
 % text instead of towering over it (user screenshot report, 2026-10-22).
 \usepackage{unicode-math}
 \setmathfont{DejaVu Math TeX Gyre}[Scale=0.65]
+% Letters and digits inside math come from THSarabunNew as well; only
+% operators/symbols (=, \in, \Delta ...) still come from the math font.
+\setmathfont{THSarabunNew}[Path=fonts/,Extension=.ttf,range={up/{latin,Latin,num}}]
+\setmathfont{THSarabunNew-Italic}[Path=fonts/,Extension=.ttf,range={it/{latin,Latin}}]
 \usepackage{fancyhdr,titlesec,tocloft,caption,chngcntr}
 % เลขตาราง/รูปต่อเนื่องทั้งเล่ม (รูปที่ 23, ตารางที่ 7) เหมือนรายงานตัวอย่าง
 \counterwithout{table}{chapter}
