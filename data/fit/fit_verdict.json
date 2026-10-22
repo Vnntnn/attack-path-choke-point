@@ -1,0 +1,24 @@
+{
+  "n_rows": 46360,
+  "seed": 20260826,
+  "epss_snapshot": "epss_scores-2026-08-26.csv.gz",
+  "nvd_pages_cached": 33,
+  "joined_csv": "cvss_epss_joined.csv",
+  "published_range": [
+    "2017-03-20",
+    "2026-08-06"
+  ],
+  "best_cvss_only_model": "ols_8metrics",
+  "r2_logit": 0.2193666718648738,
+  "r2_prob_top10pct": -0.42049830763524976,
+  "spearman_rho": 0.5478513263779816,
+  "perturbation_relative_p50": 0.6056113336371449,
+  "perturbation_relative_p90": 2.1250943466095644,
+  "signed_rel_p05": -0.8443130439900582,
+  "signed_rel_p95": 2.8528347684726993,
+  "resid_logit_skew": 2.739862970819488,
+  "resid_log_abs_p50": 0.5869375729520536,
+  "resid_log_abs_p90": 1.4825697787715049,
+  "resid_log_abs_p50_top_decile": 1.9383959105345505,
+  "resid_log_abs_p90_top_decile": 3.979838359148392
+}

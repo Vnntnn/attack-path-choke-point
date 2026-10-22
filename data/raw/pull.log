@@ -1,0 +1,81 @@
+EPSS -> epss_scores-2026-08-26.csv.gz
+EPSS rows: 364277
+NVD total=382552 pages=192 sampling 64 (stride=3)
+  [1/64] startIndex=0
+  [2/64] startIndex=6000
+  [3/64] startIndex=12000
+  [4/64] startIndex=18000
+  [5/64] startIndex=24000
+  [6/64] startIndex=30000
+EPSS cached: epss_scores-2026-08-26.csv.gz
+EPSS rows: 364277
+NVD total=382552 pages=192 sampling 26 from page 36 (stride=6)
+  [1/26] startIndex=72000
+      v3 yield 32/2000
+  [2/26] startIndex=84000
+      v3 yield 1974/2000
+  [3/26] startIndex=96000
+      v3 yield 1973/2000
+  [4/26] startIndex=108000
+      v3 yield 1979/2000
+  [5/26] startIndex=120000
+      v3 yield 1831/2000
+  [6/26] startIndex=132000
+      v3 yield 1744/2000
+  [7/26] startIndex=144000
+      v3 yield 1933/2000
+  [8/26] startIndex=156000
+      v3 yield 1786/2000
+  [9/26] startIndex=168000
+      v3 yield 1843/2000
+  [10/26] startIndex=180000
+EPSS cached: epss_scores-2026-08-26.csv.gz
+EPSS rows: 364277
+NVD total=384033 pages=193 sampling 27 from page 36 (stride=6)
+      v3 yield 32/2000
+      v3 yield 1974/2000
+      v3 yield 1973/2000
+      v3 yield 1979/2000
+      v3 yield 1831/2000
+      v3 yield 1744/2000
+      v3 yield 1933/2000
+      v3 yield 1786/2000
+      v3 yield 1843/2000
+  [10/27] startIndex=180000
+      v3 yield 1928/2000
+  [11/27] startIndex=192000
+      v3 yield 1912/2000
+  [12/27] startIndex=204000
+      v3 yield 1844/2000
+  [13/27] startIndex=216000
+      v3 yield 1909/2000
+  [14/27] startIndex=228000
+      v3 yield 1946/2000
+  [15/27] startIndex=240000
+      v3 yield 1969/2000
+  [16/27] startIndex=252000
+      v3 yield 1916/2000
+  [17/27] startIndex=264000
+      v3 yield 1936/2000
+  [18/27] startIndex=276000
+      v3 yield 1940/2000
+  [19/27] startIndex=288000
+      v3 yield 1899/2000
+  [20/27] startIndex=300000
+      v3 yield 1798/2000
+  [21/27] startIndex=312000
+      v3 yield 1858/2000
+  [22/27] startIndex=324000
+      v3 yield 1050/2000
+  [23/27] startIndex=336000
+      v3 yield 1943/2000
+  [24/27] startIndex=348000
+      v3 yield 1895/2000
+  [25/27] startIndex=360000
+      v3 yield 1842/2000
+  [26/27] startIndex=372000
+      v3 yield 1712/2000
+  [27/27] startIndex=384000
+      v3 yield 11/33
+NVD CVEs with a CVSS v3.x vector: 46403
+joined rows: 46392 -> /home/vnntnn/Projects/ITIS2026/data/fit/cvss_epss_joined.csv

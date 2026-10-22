@@ -1,0 +1,16 @@
+{
+  "aws-key-on-host": "AV:L/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H",
+  "cicd-oidc-broad-sub": "AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H",
+  "federated-group-overbroad-role": "AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H",
+  "iam-passrole-excess-privilege": "AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+  "iam-trust-missing-external-id": "AV:N/AC:H/PR:L/UI:N/S:C/C:H/I:H/A:H",
+  "iam-trust-wildcard-principal": "AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H",
+  "s3-public-read": "AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+  "s3-public-write": "AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+  "shared-local-admin-password": "AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+  "smb-signing-disabled": "AV:A/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N",
+  "ssrf-imdsv1-token": "AV:A/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+  "stale-service-account-cred": "AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+  "unauth-internal-service": "AV:A/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+  "weak-ssh-credentials": "AV:A/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+}

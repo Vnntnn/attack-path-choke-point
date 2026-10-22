@@ -44,7 +44,7 @@ Requires Python 3.13 and [uv](https://docs.astral.sh/uv/).
 uv sync
 uv run pytest -q                                   # tests
 
-uv run python scripts/pull_data.py                 # EPSS + NVD, cached in data/raw/
+uv run python scripts/pull_data.py                 # optional: refresh EPSS + NVD in data/raw/
 uv run --group fit scripts/fit_weights.py          # CVSS -> EPSS fit
 uv run python experiments/run.py --jobs 8          # full grid, about 30 minutes
 uv run python -m experiments.exp6_fit_error        # fit-error experiment
@@ -52,7 +52,7 @@ uv run --group report experiments/analyze.py       # tables and plots
 uv run python scripts/check_claims.py              # numbers in the report vs. results
 ```
 
-`experiments/run.py` refuses to overwrite existing `results/exp*.csv`; pass `--force` to start over. The `data/` directory is not tracked, so the first step downloads it again.
+`experiments/run.py` refuses to overwrite existing `results/exp*.csv`; pass `--force` to start over. `data/` is committed (about 50 MB): `data/raw/` holds the EPSS snapshot of 2026-08-26 and the NVD pages, so the numbers in the report can be reproduced without pulling again. Running `pull_data.py` fetches current EPSS scores, which will differ from the snapshot.
 
 The lab needs Docker and Terraform. Steps are in [`lab/README.md`](lab/README.md).
 

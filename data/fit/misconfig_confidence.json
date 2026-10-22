@@ -1,0 +1,16 @@
+{
+  "aws-key-on-host": "high",
+  "cicd-oidc-broad-sub": "med",
+  "federated-group-overbroad-role": "med",
+  "iam-passrole-excess-privilege": "high",
+  "iam-trust-missing-external-id": "med",
+  "iam-trust-wildcard-principal": "high",
+  "s3-public-read": "high",
+  "s3-public-write": "med",
+  "shared-local-admin-password": "high",
+  "smb-signing-disabled": "low",
+  "ssrf-imdsv1-token": "low",
+  "stale-service-account-cred": "med",
+  "unauth-internal-service": "high",
+  "weak-ssh-credentials": "high"
+}

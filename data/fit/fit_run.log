@@ -1,0 +1,76 @@
+/home/vnntnn/.cache/uv/environments-v2/fit-weights-297bb8faf3a4815d/lib/python3.13/site-packages/pandas/core/nanops.py:1673: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  return spearmanr(a, b)[0]
+dropped 32 pre-2016 CVEs (backfilled v3, biased subgroup)
+rows=46360  EPSS median=0.00552 max=0.99999  p95=0.05783
+cvss_version
+3.1    39590
+3.0     6770
+distinct CVSS metric cells=896  rows/cell median=3 p10=1 max=5115
+scorer mix: {'Primary': 31882, 'Secondary': 14478}
+published range: 2017-03-20 .. 2026-08-06
+by year: {'2017': 3947, '2018': 1979, '2019': 3575, '2020': 1933, '2021': 3629, '2022': 3840, '2023': 5699, '2024': 5821, '2025': 8441, '2026': 7496}
+coeffs -> fit_coeffs.json (22 terms, additive on logit)
+
+             model  r2_logit   r2_prob  r2_prob_top10pct  spearman_rho  resid_sd_logit  mae_prob  rel_err_p50  rel_err_p90  rel_err_p95  signed_rel_p05  signed_rel_p95  frac_overpredicted
+      ols_8metrics  0.219367 -0.009927         -0.420498      0.547851        1.194372  0.019123     0.605611     2.125094     2.852835       -0.844313        2.852835            0.565919
+      gbm_8metrics  0.268320 -0.005476         -0.414516      0.600956        1.156317  0.018861     0.551239     2.004334     2.824180       -0.826768        2.824180            0.566091
+ols_basescore_only  0.118453 -0.017873         -0.431909      0.353562        1.269237  0.019465     0.664643     2.566022     3.497196       -0.858824        3.497196            0.567041
+ constant_baseline -0.000003 -0.032379         -0.452380           NaN        1.351824  0.019789     0.707589     2.884134     3.950849       -0.882686        3.950849            0.576186
+
+computing out-of-fold residuals (5-fold) for the full sample...
+
+residual (logit space) percentiles:
+  p1=-1.76  p5=-1.35  p10=-1.10  p25=-0.69  p50=-0.15  p75=+0.41  p90=+1.09  p95=+1.78  p99=+4.47
+  sd=1.154  skew=+2.951  mean=+0.000  median=-0.147
+
+residuals by CVSS metric level (heteroscedasticity check):
+metric            level     n  resid_median  resid_sd  resid_iqr  epss_median
+    AV ADJACENT_NETWORK   945     -0.127535  1.221536   1.030268     0.004610
+    AV            LOCAL 10892     -0.105110  0.964044   1.049874     0.002690
+    AV          NETWORK 34079     -0.163758  1.211497   1.117840     0.006730
+    AV         PHYSICAL   444     -0.037241  0.561393   0.646501     0.003300
+    AC             HIGH  3050     -0.156174  1.177587   1.267348     0.004555
+    AC              LOW 43310     -0.146589  1.151835   1.083943     0.005590
+    PR             HIGH  3610     -0.078624  0.918330   0.920018     0.004930
+    PR              LOW 16658     -0.131652  0.950602   0.911547     0.003670
+    PR             NONE 26092     -0.169831  1.292577   1.288165     0.007500
+    UI             NONE 32205     -0.183406  1.198985   1.089712     0.005580
+    UI         REQUIRED 14155     -0.065340  1.042821   1.082465     0.005400
+     S          CHANGED  8868     -0.087921  0.958059   0.835811     0.004270
+     S        UNCHANGED 37492     -0.166741  1.195117   1.180213     0.006070
+     C             HIGH 24524     -0.223449  1.341180   1.301820     0.006930
+     C              LOW 10561     -0.105912  0.926323   0.873128     0.004010
+     C             NONE 11275     -0.079000  0.869071   0.905755     0.004890
+     I             HIGH 21316     -0.194757  1.344813   1.299571     0.007540
+     I              LOW 10708     -0.105919  0.871976   0.812377     0.003830
+     I             NONE 14336     -0.137650  1.022855   1.083590     0.005020
+     A             HIGH 24864     -0.193634  1.289833   1.265393     0.006980
+     A              LOW  3092     -0.135361  0.792734   0.722799     0.003050
+     A             NONE 18404     -0.097752  0.999399   0.986834     0.004880
+
+sd ratio across levels = 2.40x (HETEROSCEDASTIC -- one global band misstates uncertainty; perturb per metric level)
+
+log-space residual after removing the constant (power-law) part:  p50=0.543  p90=1.418 nats
+  |r| by EPSS band (D6 should use the top-decile row):
+    pooled             n=46360  p50=0.543  p90=1.418 nats
+    bottom 90%         n=41724  p50=0.480  p90=1.148 nats
+    TOP EPSS DECILE    n=4636   p50=1.790  p90=3.897 nats
+  path-order resolution -- two paths keep their true order only if
+  their cost gap (nats of -log p) exceeds delta*(lenP+lenQ):
+    paths of 2 edges each: gap must exceed 2.17 (pooled p50) / 5.67 (pooled p90) nats  | top decile: 7.16 / 15.59
+    paths of 4 edges each: gap must exceed 4.34 (pooled p50) / 11.34 (pooled p90) nats  | top decile: 14.32 / 31.18
+    paths of 8 edges each: gap must exceed 8.68 (pooled p50) / 22.68 (pooled p90) nats  | top decile: 28.64 / 62.35
+  NOTE: necessary condition only. exp 6 measures the real thing.
+per-CVE residuals -> /home/vnntnn/Projects/ITIS2026/data/fit/residuals.csv  (46360 rows, 1206 distinct vectors, median 2/vector, 286 vectors with >=10 residuals)
+
+Best CVSS-only model: gbm_8metrics  R2(logit)=0.268  R2(top decile)=-0.415  Spearman rho=0.601
+=> NOTE: weak on absolute value, usable on ORDER. That is the case
+   that matters -- choke point ranking depends on ordering edges,
+   not on getting each p(e) exactly right. Say this explicitly in
+   the report; it is a different conclusion from 'the fit failed'.
+=> LOW R2, as PLAN.md sec.4 anticipated. This is a finding, not a failure:
+   CVSS cannot recover EPSS because EPSS is trained on exploitation
+   telemetry that CVSS deliberately excludes. Objective 2 becomes
+   'mapping + measured uncertainty', and objective 4 inherits a
+   perturbation size that was measured rather than guessed:
+   median relative error 55%, p90 200%.
