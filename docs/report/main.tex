@@ -52,17 +52,29 @@
 
 \usepackage{graphicx,xcolor,booktabs,array,multirow,longtable,float,enumitem,setspace,amsmath}
 % Math mode (every $p(e)$, $\Delta(v)$, $R^2$, ...) was never given a font of
-% its own, so LaTeX fell back to its stock Computer Modern math italic/symbol
-% fonts -- a serif face that looks nothing like THSarabunNew AND renders
-% visibly bigger (measured 17.2pt against body text's 15.94pt). Every math
-% variable on every page was effectively in a third, uncoordinated font.
-% unicode-math + DejaVu Math TeX Gyre (installed on this system already,
-% and the same DejaVu family already used for \texttt -- keeps the two
-% non-Thai faces in this document related instead of adding a third,
-% unrelated one) replaces that with one consistent, explicitly-sized math
-% font instead of whatever LaTeX defaults to.
+% its own, so LaTeX fell back to its stock Computer Modern math fonts -- a
+% serif face unrelated to THSarabunNew. unicode-math + DejaVu Math TeX Gyre
+% (installed on this system already; same DejaVu family already used for
+% \texttt) gives math one deliberate, matched font instead of whatever
+% LaTeX defaults to.
+%
+% Picking A font wasn't the real bug, though -- isolated testing (minimal
+% .tex, no Thai sizing tricks, plain stock \normalsize) showed EVERY math
+% font available here, including stock Computer Modern, rendering visibly
+% larger than THSarabunNew text at the identical nominal point size.
+% Measured why: THSarabunNew's cap-height is only 0.476 of its em-square
+% (fonttools sCapHeight/unitsPerEm) where ordinary Latin-designed fonts
+% (DejaVu Math TeX Gyre: 0.729, Noto Sans Math: 0.714, Computer Modern
+% likewise) use roughly 0.70-0.73 -- a convention from Thai script needing
+% headroom above and below the consonant line for stacked tone marks and
+% vowels. So "the same point size" was never visually the same size in
+% this document for ANY non-Thai font: \texttt needed its own Scale
+% (0.78/0.80, fixed earlier this session) for exactly this reason, and
+% math mode needed it too. Scale = 0.476/0.729 ~= 0.65, confirmed in an
+% isolated test to finally sit flush with the surrounding Thai/English
+% text instead of towering over it (user screenshot report, 2026-10-22).
 \usepackage{unicode-math}
-\setmathfont{DejaVu Math TeX Gyre}
+\setmathfont{DejaVu Math TeX Gyre}[Scale=0.65]
 \usepackage{fancyhdr,titlesec,tocloft,caption,chngcntr}
 % เลขตาราง/รูปต่อเนื่องทั้งเล่ม (รูปที่ 23, ตารางที่ 7) เหมือนรายงานตัวอย่าง
 \counterwithout{table}{chapter}

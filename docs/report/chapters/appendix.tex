@@ -76,6 +76,9 @@ slug & เวกเตอร์ CVSS v3.1 & p\_source & conf \\
 \bottomrule
 \end{longtable}
 
+% Without the break the paragraph's last line spilled alone onto the next
+% page (app:reproduce starts with its own \clearpage), leaving it almost blank.
+\newpage
 node ที่เป็น entry หรือ target ถูกทำเครื่องหมายผ่านแอตทริบิวต์ \texttt{entry}/\texttt{target}
 บน node นั้นโดยตรง (ไม่ใช่คอลัมน์ของ edge) \texttt{graph.validate\_structure()} ตรวจสอบ
 ว่าทุก node เป็น tuple สองช่อง, ทุก edge มี \texttt{kind}/\texttt{domain}/\texttt{ref} ครบ,
