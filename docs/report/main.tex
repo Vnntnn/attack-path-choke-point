@@ -1,0 +1,182 @@
+% รายงานโครงงานศึกษาอิสระ ITIS2026 — คอมไพล์ด้วย XeTeX (tectonic): docs/report/build.sh
+\documentclass[a4paper,12pt]{report}
+
+% ---------- หน้ากระดาษ (ตามรายงานตัวอย่าง: ขอบซ้ายกว้างสำหรับเข้าเล่ม) ----------
+\usepackage[top=3.4cm,bottom=2.5cm,left=3.8cm,right=2.5cm,headheight=20pt,headsep=14pt]{geometry}
+
+% ---------- ฟอนต์ไทย: TH Sarabun New (bundled ในเล่ม, GPL-2.0 + font exception) ----------
+% มาตรฐานเอกสารราชการไทย: TH Sarabun New ที่ 16pt -- ห้ามใส่ Scale เพิ่ม ขนาดจะใหญ่เกินจริง
+\usepackage{fontspec}
+\setmainfont{THSarabunNew}[Path=fonts/,Extension=.ttf,
+  UprightFont=*,BoldFont=*-Bold,ItalicFont=*-Italic,BoldItalicFont=*-BoldItalic,
+  WordSpace={1,0,0}]
+% Code spans (\texttt) use THSarabunNew too, so Thai, English and code all
+% share one typeface. (Mono fonts -- DejaVu, Noto -- never matched its weight
+% and size; user asked 2026-10-22 for one font everywhere.)
+\setmonofont{THSarabunNew}[Path=fonts/,Extension=.ttf,
+  UprightFont=*,BoldFont=*-Bold,ItalicFont=*-Italic,BoldItalicFont=*-BoldItalic]
+% Thai line breaking: build/thai_zwsp.py puts U+200B between words as a break
+% point only -- natural width 0, NO stretch, or justification visibly spaces
+% out every Thai word (reads as garbled/broken Thai). Looser lines end with a
+% little extra white space at the margin instead; that is the correct trade.
+\catcode"200B=\active
+\protected\def^^^^200b{\hskip0pt\relax}
+% A handful of literal ASCII spaces survive inside Thai prose (clause breaks,
+% a space before an inline English/CVSS token) alongside the ZWSP points
+% above. Normal interword glue DOES stretch -- so on a line where ZWSP (zero
+% stretch) supplies every other break, those rare real spaces end up as the
+% ONLY elastic glue and absorb ALL of that line's justification stretch by
+% themselves, rendering as one huge gap instead of being spread thin across
+% the line (found 2026-10-21 via `pdftotext -layout` showing runs of 3+
+% spaces mid-sentence). WordSpace={1,0,0} above keeps the normal space WIDTH
+% but removes its stretch/shrink too, so it behaves like the ZWSP points
+% around it and the same "looser lines, no visible gap" trade-off applies
+% uniformly instead of concentrating on whichever real space happens to be
+% on a given line.
+%
+% Same mechanism shows up a second way: default math spacing around a
+% relation like "=" (\thickmuskip) and "," (\medmuskip) DOES stretch, so a
+% Thai line that contains inline math (e.g. $\{v : \Delta(v) = \infty\}$)
+% can dump its whole justification deficit into that one "=" sign instead,
+% rendering as one huge gap around it. Zero that stretch too, for the same
+% reason as WordSpace above.
+\thickmuskip=5mu plus 0mu minus 0mu
+\medmuskip=4mu plus 0mu minus 4mu
+
+\usepackage{graphicx,xcolor,booktabs,array,multirow,longtable,float,enumitem,setspace,amsmath}
+% Math mode (every $p(e)$, $\Delta(v)$, $R^2$, ...) was never given a font of
+% its own, so LaTeX fell back to its stock Computer Modern math fonts -- a
+% serif face unrelated to THSarabunNew. unicode-math + DejaVu Math TeX Gyre
+% (installed on this system already; same DejaVu family already used for
+% \texttt) gives math one deliberate, matched font instead of whatever
+% LaTeX defaults to.
+%
+% Picking A font wasn't the real bug, though -- isolated testing (minimal
+% .tex, no Thai sizing tricks, plain stock \normalsize) showed EVERY math
+% font available here, including stock Computer Modern, rendering visibly
+% larger than THSarabunNew text at the identical nominal point size.
+% Measured why: THSarabunNew's cap-height is only 0.476 of its em-square
+% (fonttools sCapHeight/unitsPerEm) where ordinary Latin-designed fonts
+% (DejaVu Math TeX Gyre: 0.729, Noto Sans Math: 0.714, Computer Modern
+% likewise) use roughly 0.70-0.73 -- a convention from Thai script needing
+% headroom above and below the consonant line for stacked tone marks and
+% vowels. So "the same point size" was never visually the same size in
+% this document for ANY non-Thai font: \texttt needed its own Scale
+% (0.78/0.80, fixed earlier this session) for exactly this reason, and
+% math mode needed it too. Scale = 0.476/0.729 ~= 0.65, confirmed in an
+% isolated test to finally sit flush with the surrounding Thai/English
+% text instead of towering over it (user screenshot report, 2026-10-22).
+\usepackage{unicode-math}
+\setmathfont{DejaVu Math TeX Gyre}[Scale=0.65]
+% Letters and digits inside math come from THSarabunNew as well; only
+% operators/symbols (=, \in, \Delta ...) still come from the math font.
+\setmathfont{THSarabunNew}[Path=fonts/,Extension=.ttf,range={up/{latin,Latin,num}}]
+\setmathfont{THSarabunNew-Italic}[Path=fonts/,Extension=.ttf,range={it/{latin,Latin}}]
+\usepackage{fancyhdr,titlesec,tocloft,caption,chngcntr}
+% เลขตาราง/รูปต่อเนื่องทั้งเล่ม (รูปที่ 23, ตารางที่ 7) เหมือนรายงานตัวอย่าง
+\counterwithout{table}{chapter}
+\counterwithout{figure}{chapter}
+\usepackage[hidelinks,bookmarks=false,pdfpagelabels=false]{hyperref}
+
+% ---------- ขนาดตัวอักษร: เนื้อหา 16pt เหมือนรายงานตัวอย่าง ----------
+% \scriptsize/\tiny were left out of this block for a while -- they kept
+% the documentclass's stock 12pt-based values (8pt/6pt) instead of scaling
+% up with everything else, so any \tiny/\scriptsize text (the CVSS-vector
+% and edge-schema tables in the appendix) rendered at roughly half the
+% size it should, and worse once \texttt's own 0.78 mono scale stacked on
+% top (measured ~4.7pt/~6.2pt in the built PDF -- found 2026-10-22 from a
+% user report that English words looked inconsistently sized).
+\renewcommand{\tiny}{\fontsize{8pt}{10pt}\selectfont}
+\renewcommand{\scriptsize}{\fontsize{10pt}{13pt}\selectfont}
+\renewcommand{\footnotesize}{\fontsize{13pt}{17pt}\selectfont}
+\renewcommand{\small}{\fontsize{14pt}{19pt}\selectfont}
+\renewcommand{\normalsize}{\fontsize{16pt}{22pt}\selectfont}
+\renewcommand{\large}{\fontsize{18pt}{24pt}\selectfont}
+\renewcommand{\Large}{\fontsize{20pt}{28pt}\selectfont}
+\normalsize
+\setlength{\parindent}{1.25cm}
+\setlength{\parskip}{2pt}
+\setlength{\emergencystretch}{3em}
+\sloppy
+\setlist{itemsep=1pt,topsep=3pt,parsep=0pt}
+
+% ---------- ชื่อภาษาไทย ----------
+\renewcommand{\contentsname}{สารบัญ}
+\renewcommand{\listfigurename}{สารบัญรูป}
+\renewcommand{\listtablename}{สารบัญตาราง}
+\renewcommand{\bibname}{เอกสารอ้างอิง}
+\renewcommand{\figurename}{รูปที่}
+\renewcommand{\tablename}{ตารางที่}
+\renewcommand{\appendixname}{ภาคผนวก}
+
+% ---------- หัวข้อ: บทอยู่กึ่งกลาง ตัวหนา; หัวข้อย่อยชิดซ้าย ----------
+\titleformat{\chapter}[block]{\centering\bfseries\Large}{บทที่ \thechapter}{0.6em}{}
+\titlespacing*{\chapter}{0pt}{0pt}{16pt}
+\titleformat{\section}{\bfseries\large}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{14pt}{4pt}
+\titleformat{\subsection}{\bfseries\normalsize}{\thesubsection}{0.6em}{}
+\titlespacing*{\subsection}{0pt}{10pt}{3pt}
+\titleformat{\subsubsection}{\bfseries\normalsize}{\thesubsubsection}{0.6em}{}
+\titlespacing*{\subsubsection}{0pt}{8pt}{2pt}
+% บทที่ไม่มีเลขบท (บทคัดย่อ ฯลฯ)
+\newcommand{\frontchapter}[1]{\clearpage\begin{center}\bfseries\Large #1\end{center}\vspace{6pt}}
+
+% ---------- คำบรรยาย: ตารางอยู่บนตาราง, รูปอยู่ใต้รูป ----------
+\captionsetup{font=small,labelfont=bf,textfont=bf,labelsep=space,skip=6pt}
+\captionsetup[table]{position=above}
+\captionsetup[figure]{position=below}
+
+% ---------- สารบัญ: บทตัวหนา มีจุดไข่ปลา ----------
+\renewcommand{\cftchapfont}{\bfseries}
+\renewcommand{\cftchappagefont}{\bfseries}
+\renewcommand{\cftchappresnum}{บทที่ }
+\setlength{\cftchapnumwidth}{4.6em}
+\renewcommand{\cftchapleader}{\bfseries\cftdotfill{\cftdotsep}}
+\setlength{\cftbeforechapskip}{6pt}
+\setlength{\cftsecindent}{1.5em}\setlength{\cftsecnumwidth}{2.6em}
+\setlength{\cftsubsecindent}{4em}\setlength{\cftsubsecnumwidth}{3.4em}
+\setlength{\cftsubsubsecindent}{7.4em}\setlength{\cftsubsubsecnumwidth}{4.2em}
+\setlength{\cftfigindent}{0pt}\setlength{\cftfignumwidth}{4.5em}
+\setlength{\cfttabindent}{0pt}\setlength{\cfttabnumwidth}{5.2em}
+\renewcommand{\cftfigpresnum}{รูปที่ }
+\renewcommand{\cfttabpresnum}{ตารางที่ }
+\setcounter{tocdepth}{3}
+% ชื่อ สารบัญ / สารบัญตาราง / สารบัญรูป อยู่กึ่งกลาง
+\renewcommand{\cfttoctitlefont}{\hfill\bfseries\Large}
+\renewcommand{\cftaftertoctitle}{\hfill}
+\renewcommand{\cftlottitlefont}{\hfill\bfseries\Large}
+\renewcommand{\cftafterlottitle}{\hfill}
+\renewcommand{\cftloftitlefont}{\hfill\bfseries\Large}
+\renewcommand{\cftafterloftitle}{\hfill}
+
+% ---------- เลขหน้า: ส่วนหน้าเป็นพยัญชนะไทย (ก ข ค …), ส่วนเนื้อหาเป็นเลขอารบิก ----------
+\newcommand{\thaiconsonant}[1]{\ifcase#1\or ก\or ข\or ค\or ง\or จ\or ฉ\or ช\or ซ\or ฌ\or ญ\or ฎ\or ฏ\or ฐ\or ฑ\or ฒ\or ณ\or ด\or ต\or ถ\or ท\or ธ\or น\or บ\or ป\or ผ\or ฝ\or พ\or ฟ\or ภ\or ม\or ย\or ร\or ล\or ว\or ศ\or ษ\or ส\or ห\or ฬ\or อ\or ฮ\fi}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[R]{\small\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\fancypagestyle{plain}{\fancyhf{}\fancyhead[R]{\small\thepage}\renewcommand{\headrulewidth}{0pt}}
+
+% ตัวช่วยสำหรับร่างที่ยังไม่เขียน
+\newcommand{\draftnote}[1]{\par\noindent{\color{gray}\itshape [ร่าง — #1]}\par}
+
+\input{meta}
+
+\begin{document}
+\input{front}
+
+% ================= เนื้อหา =================
+\clearpage\pagenumbering{arabic}
+\input{chapters/ch1}
+\input{chapters/ch2}
+\input{chapters/ch4}
+\input{chapters/ch5}
+\input{chapters/ch6}
+
+\begin{thebibliography}{99}
+\input{chapters/refs}
+\end{thebibliography}
+
+\input{chapters/appendix}
+
+\end{document}

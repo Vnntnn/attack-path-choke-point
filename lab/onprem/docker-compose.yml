@@ -1,0 +1,33 @@
+# On-prem topology: two hosts on one flat network -- no segmentation
+# between them, which is itself the misconfig being modeled
+# (flat-vlan-no-segmentation, docs/MISCONFIG_RUBRIC.md). GNS3 was not usable
+# headless here (no display, no gns3server backend); real containers on a
+# real Docker network give the same reachability property GNS3 would have
+# modeled -- see lab/README.md.
+#
+# dmz-host: internet-facing foothold.
+# internal-host: holds the leaked cloud credential (aws-key-on-host), gated by
+# a weak/default root SSH password (weak-ssh-credentials, docs/MISCONFIG_RUBRIC.md)
+# -- the misconfig export_graph.py's onprem.crack_ssh_weak_password() must
+# actually crack before the exporter is allowed to add the aws-key-on-host
+# edge. Without that step the graph would jump from bare network reachability
+# straight to reading a root-owned file with no privilege gained in between.
+services:
+  dmz-host:
+    image: alpine:3.20
+    container_name: lab-onprem-dmz
+    command: sh -c "apk add --no-cache openssh >/dev/null && ssh-keygen -A && /usr/sbin/sshd -D"
+    networks: [onprem_flat]
+
+  internal-host:
+    image: alpine:3.20
+    container_name: lab-onprem-internal
+    command: sh -c "apk add --no-cache openssh >/dev/null && ssh-keygen -A && echo 'root:${WEAK_ROOT_PASSWORD:-Summer2024!}' | chpasswd && printf 'PermitRootLogin yes\nPasswordAuthentication yes\n' >> /etc/ssh/sshd_config && mkdir -p /root/.aws && printf '[default]\naws_access_key_id = %s\naws_secret_access_key = leaked-secret-not-validated-by-localstack\n' \"$$LEAKED_ACCESS_KEY_ID\" > /root/.aws/credentials && /usr/sbin/sshd -D"
+    environment:
+      LEAKED_ACCESS_KEY_ID: "${LEAKED_ACCESS_KEY_ID:?run: export LEAKED_ACCESS_KEY_ID=$$(terraform -chdir=lab/terraform output -raw leaked_access_key_id)}"
+      WEAK_ROOT_PASSWORD: "${WEAK_ROOT_PASSWORD:-Summer2024!}"
+    networks: [onprem_flat]
+
+networks:
+  onprem_flat:
+    driver: bridge

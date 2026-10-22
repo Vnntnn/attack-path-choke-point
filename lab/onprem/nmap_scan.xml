@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<?xml-stylesheet href="file:///usr/bin/../share/nmap/nmap.xsl" type="text/xsl"?>
+<!-- Nmap 7.98 scan initiated Wed Sep 16 02:29:23 2026 as: /usr/bin/nmap -sT -p 22,80,443,3389 -oX - 172.18.0.2 172.18.0.3 -->
+<nmaprun scanner="nmap" args="/usr/bin/nmap -sT -p 22,80,443,3389 -oX - 172.18.0.2 172.18.0.3" start="1789525763" startstr="Wed Sep 16 02:29:23 2026" version="7.98" xmloutputversion="1.05">
+<scaninfo type="connect" protocol="tcp" numservices="4" services="22,80,443,3389"/>
+<verbose level="0"/>
+<debugging level="0"/>
+<hosthint><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="172.18.0.3" addrtype="ipv4"/>
+<address addr="0E:87:11:64:7B:C5" addrtype="mac"/>
+<hostnames>
+</hostnames>
+</hosthint>
+<hosthint><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="172.18.0.2" addrtype="ipv4"/>
+<address addr="AE:D8:16:50:32:5F" addrtype="mac"/>
+<hostnames>
+</hostnames>
+</hosthint>
+<host starttime="1789525764" endtime="1789525764"><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="172.18.0.2" addrtype="ipv4"/>
+<address addr="AE:D8:16:50:32:5F" addrtype="mac"/>
+<hostnames>
+<hostname name="lab-onprem-dmz.onprem_onprem_flat" type="PTR"/>
+</hostnames>
+<ports><port protocol="tcp" portid="22"><state state="open" reason="syn-ack" reason_ttl="0"/><service name="ssh" method="table" conf="3"/></port>
+<port protocol="tcp" portid="80"><state state="closed" reason="conn-refused" reason_ttl="0"/><service name="http" method="table" conf="3"/></port>
+<port protocol="tcp" portid="443"><state state="closed" reason="conn-refused" reason_ttl="0"/><service name="https" method="table" conf="3"/></port>
+<port protocol="tcp" portid="3389"><state state="closed" reason="conn-refused" reason_ttl="0"/><service name="ms-wbt-server" method="table" conf="3"/></port>
+</ports>
+<times srtt="32" rttvar="1623" to="100000"/>
+</host>
+<host starttime="1789525764" endtime="1789525764"><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="172.18.0.3" addrtype="ipv4"/>
+<address addr="0E:87:11:64:7B:C5" addrtype="mac"/>
+<hostnames>
+<hostname name="lab-onprem-internal.onprem_onprem_flat" type="PTR"/>
+</hostnames>
+<ports><port protocol="tcp" portid="22"><state state="open" reason="syn-ack" reason_ttl="0"/><service name="ssh" method="table" conf="3"/></port>
+<port protocol="tcp" portid="80"><state state="closed" reason="conn-refused" reason_ttl="0"/><service name="http" method="table" conf="3"/></port>
+<port protocol="tcp" portid="443"><state state="closed" reason="conn-refused" reason_ttl="0"/><service name="https" method="table" conf="3"/></port>
+<port protocol="tcp" portid="3389"><state state="closed" reason="conn-refused" reason_ttl="0"/><service name="ms-wbt-server" method="table" conf="3"/></port>
+</ports>
+<times srtt="57" rttvar="1620" to="100000"/>
+</host>
+<runstats><finished time="1789525764" timestr="Wed Sep 16 02:29:24 2026" summary="Nmap done at Wed Sep 16 02:29:24 2026; 2 IP addresses (2 hosts up) scanned in 0.06 seconds" elapsed="0.06" exit="success"/><hosts up="2" down="0" total="2"/>
+</runstats>
+</nmaprun>

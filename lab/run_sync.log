@@ -1,0 +1,295 @@
+INFO:cartography.sync:Using the pure-Python Bolt codec. Installing cartography[neo4j-rust] pulls in neo4j-rust-ext, which speeds up talking to Neo4j.
+INFO:cartography.sync:Starting sync with update tag '1790509304'
+INFO:cartography.sync:Starting sync stage 'aws'
+INFO:cartography.intel.aws:Syncing AWS accounts: 000000000000
+INFO:cartography.client.core.tx:Loaded 1 AWSAccount nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSRootPrincipal nodes
+WARNING:cartography.intel.aws:Unable to describe AWS Organization for account 000000000000. AWS Organizations error code: InternalFailure.
+Traceback (most recent call last):
+  File "/home/vnntnn/Projects/ITKMITL/ITIS2026/lab/.venv/lib/python3.13/site-packages/cartography/intel/aws/__init__.py", line 407, in _discover_aws_organization_candidate
+    response = client.describe_organization()
+  File "/home/vnntnn/Projects/ITKMITL/ITIS2026/lab/.venv/lib/python3.13/site-packages/botocore/client.py", line 602, in _api_call
+    return self._make_api_call(operation_name, kwargs)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vnntnn/Projects/ITKMITL/ITIS2026/lab/.venv/lib/python3.13/site-packages/botocore/context.py", line 123, in wrapper
+    return func(*args, **kwargs)
+  File "/home/vnntnn/Projects/ITKMITL/ITIS2026/lab/.venv/lib/python3.13/site-packages/botocore/client.py", line 1078, in _make_api_call
+    raise error_class(parsed_response, operation_name)
+botocore.exceptions.ClientError: An error occurred (InternalFailure) when calling the DescribeOrganization operation: The API for service 'organizations' is either not included in your current license plan or has not yet been emulated by LocalStack. Please refer to https://docs.localstack.cloud/references/coverage for more details.
+INFO:cartography.intel.aws:Syncing AWS account with ID '000000000000' using configured profile 'default'.
+WARNING:cartography.intel.aws:Module 's3' is requested without its dependencies ['kms']. Some relationships may not be created if the dependency data doesn't exist in Neo4j.
+INFO:cartography.intel.aws.iam:Syncing IAM for account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSRootPrincipal nodes
+INFO:cartography.intel.aws.iam:Syncing IAM users for account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSUser nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSInlinePolicy nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSPolicyStatement nodes
+INFO:cartography.intel.aws.iam:Syncing IAM MFA Devices for account '000000000000'.
+INFO:cartography.intel.aws.iam:Syncing IAM groups for account '000000000000'.
+INFO:cartography.intel.aws.iam:Syncing IAM roles for account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSAccount nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSRootPrincipal nodes
+INFO:cartography.client.core.tx:Loaded 2 AWSRole nodes
+INFO:cartography.intel.aws.iam:Syncing IAM role inline policies for account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 2 AWSInlinePolicy nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSPolicyStatement nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSPolicyStatement nodes
+INFO:cartography.intel.aws.iam:Syncing IAM role managed policies for account '000000000000'.
+INFO:cartography.intel.aws.iam:Syncing assume role mappings for account '000000000000'.
+WARNING:neo4j.notifications:Received notification from DBMS server: <GqlStatusObject gql_status='01N50', status_description='warn: label does not exist. The label `AWSServicePrincipal` does not exist. Verify that the spelling is correct.', position=<SummaryInputPosition line=4, column=20, offset=174>, raw_classification='UNRECOGNIZED', classification=<NotificationClassification.UNRECOGNIZED: 'UNRECOGNIZED'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'UNRECOGNIZED', '_severity': 'WARNING', '_position': {'offset': 174, 'line': 4, 'column': 20}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n    MATCH (:AWSAccount{id:$AccountId})-[:RESOURCE]->(target:AWSRole)-[:TRUSTS_AWS_PRINCIPAL]->(source:AWSPrincipal)\n    WHERE NOT source:AWSRootPrincipal\n    AND NOT source:AWSServicePrincipal\n    AND NOT source:AWSFederatedPrincipal\n    RETURN target.arn AS target_arn, source.arn AS source_arn\n    '
+WARNING:neo4j.notifications:Received notification from DBMS server: <GqlStatusObject gql_status='01N50', status_description='warn: label does not exist. The label `AWSFederatedPrincipal` does not exist. Verify that the spelling is correct.', position=<SummaryInputPosition line=5, column=20, offset=213>, raw_classification='UNRECOGNIZED', classification=<NotificationClassification.UNRECOGNIZED: 'UNRECOGNIZED'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'UNRECOGNIZED', '_severity': 'WARNING', '_position': {'offset': 213, 'line': 5, 'column': 20}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\n    MATCH (:AWSAccount{id:$AccountId})-[:RESOURCE]->(target:AWSRole)-[:TRUSTS_AWS_PRINCIPAL]->(source:AWSPrincipal)\n    WHERE NOT source:AWSRootPrincipal\n    AND NOT source:AWSServicePrincipal\n    AND NOT source:AWSFederatedPrincipal\n    RETURN target.arn AS target_arn, source.arn AS source_arn\n    '
+INFO:cartography.graph.statement:Completed STS_ASSUMEROLE_ALLOW statement #1
+INFO:cartography.intel.aws.iam:Syncing IAM user access keys for account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSAccountAccessKey nodes
+INFO:cartography.graph.statement:Completed AWSAccountAccessKey statement #1
+INFO:cartography.graph.statement:Completed AWSAccountAccessKey statement #2
+INFO:cartography.graph.statement:Completed AWSAccountAccessKey statement #3
+INFO:cartography.graph.statement:Completed AWSAccountAccessKey statement #4
+INFO:cartography.intel.aws.iam:Syncing IAM Server Certificates for account '000000000000'.
+INFO:cartography.intel.aws.iam:Syncing IAM Account Summary for account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSAccount nodes
+INFO:cartography.graph.statement:Completed AWSPolicyStatement statement #1
+INFO:cartography.graph.statement:Completed AWSPolicyStatement statement #2
+INFO:cartography.graph.statement:Completed AWSPolicyStatement statement #1
+INFO:cartography.graph.statement:Completed AWSPolicyStatement statement #2
+INFO:cartography.graph.statement:Completed AWSPolicyStatement statement #1
+INFO:cartography.graph.statement:Completed AWSPolicyStatement statement #2
+INFO:cartography.graph.statement:Completed AWSManagedPolicy statement #1
+INFO:cartography.graph.statement:Completed AWSInlinePolicy statement #1
+INFO:cartography.graph.statement:Completed AWSInlinePolicy statement #2
+INFO:cartography.graph.statement:Completed AWSInlinePolicy statement #3
+INFO:cartography.graph.statement:Completed AWSRole statement #1
+INFO:cartography.graph.statement:Completed AWSRole statement #2
+INFO:cartography.graph.statement:Completed AWSRole statement #3
+INFO:cartography.graph.statement:Completed AWSFederatedPrincipal statement #1
+INFO:cartography.graph.statement:Completed AWSFederatedPrincipal statement #2
+INFO:cartography.graph.statement:Completed AWSMfaDevice statement #1
+INFO:cartography.graph.statement:Completed AWSMfaDevice statement #2
+INFO:cartography.graph.statement:Completed AWSMfaDevice statement #3
+INFO:cartography.graph.statement:Completed AWSUser statement #1
+INFO:cartography.graph.statement:Completed AWSUser statement #2
+INFO:cartography.graph.statement:Completed AWSGroup statement #1
+INFO:cartography.graph.statement:Completed AWSGroup statement #2
+INFO:cartography.graph.statement:Completed AWSGroup statement #3
+INFO:cartography.graph.statement:Completed AWSGroup statement #4
+INFO:cartography.graph.statement:Completed AWSServerCertificate statement #1
+INFO:cartography.graph.statement:Completed AWSServerCertificate statement #2
+INFO:cartography.graph.statement:Completed AWSSAMLProvider statement #1
+INFO:cartography.graph.statement:Completed AWSSAMLProvider statement #2
+INFO:cartography.intel.aws.s3:Syncing S3 for account '000000000000'
+INFO:cartography.graph.statement:Completed aws_s3_details statement #1
+INFO:cartography.client.core.tx:Loaded 1 AWSS3Bucket nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSS3Bucket nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSS3Bucket nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSS3Bucket nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSS3Bucket nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSS3Bucket nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSS3Bucket nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSS3Acl nodes
+INFO:cartography.graph.statement:Completed aws_s3acl_analysis statement #1
+INFO:cartography.graph.statement:Completed aws_s3acl_analysis statement #2
+INFO:cartography.graph.statement:Completed aws_s3acl_analysis statement #3
+INFO:cartography.graph.statement:Completed aws_s3acl_analysis statement #4
+INFO:cartography.graph.statement:Completed aws_s3acl_analysis statement #5
+INFO:cartography.graph.statement:Completed aws_s3acl_analysis statement #6
+INFO:cartography.graph.statement:Completed aws_s3acl_analysis statement #7
+INFO:cartography.client.core.tx:Loaded 1 AWSS3PolicyStatement nodes
+INFO:cartography.graph.statement:Completed AWSS3Bucket statement #1
+INFO:cartography.graph.statement:Completed AWSS3Bucket statement #2
+INFO:cartography.graph.statement:Completed AWSS3Bucket statement #1
+INFO:cartography.graph.statement:Completed AWSS3Bucket statement #2
+INFO:cartography.graph.statement:Completed AWSS3Acl statement #1
+INFO:cartography.graph.statement:Completed AWSS3Acl statement #2
+INFO:cartography.graph.statement:Completed AWSS3Acl statement #3
+INFO:cartography.graph.statement:Completed AWSS3PolicyStatement statement #1
+INFO:cartography.graph.statement:Completed AWSS3PolicyStatement statement #2
+INFO:cartography.graph.statement:Completed AWSS3PolicyStatement statement #3
+INFO:cartography.intel.aws.s3:Syncing S3 bucket notifications
+INFO:cartography.graph.statement:Completed NOTIFIES statement #1
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'af-south-1' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'ap-east-1' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'ap-northeast-1' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'ap-northeast-2' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'ap-northeast-3' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'ap-south-1' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'ap-south-2' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'ap-southeast-1' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'ap-southeast-2' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'ap-southeast-3' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'ap-southeast-4' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'ap-southeast-5' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'ap-southeast-7' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'ca-central-1' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'ca-west-1' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'eu-central-1' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'eu-central-2' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'eu-north-1' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'eu-south-1' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'eu-south-2' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'eu-west-1' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'eu-west-2' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'eu-west-3' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'il-central-1' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'me-central-1' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'me-south-1' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'mx-central-1' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'sa-east-1' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'us-east-1' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 2 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 2 AWSIpPermissionInbound nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 3 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'us-east-2' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'us-west-1' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'us-west-2' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 1 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'us-gov-east-1' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 2 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 2 AWSIpPermissionInbound nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 3 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'us-gov-west-1' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 2 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 2 AWSIpPermissionInbound nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 3 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'cn-north-1' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 2 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 2 AWSIpPermissionInbound nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 3 AWSIpRange nodes
+INFO:cartography.intel.aws.ec2.security_groups:Syncing EC2 security groups for region 'cn-northwest-1' in account '000000000000'.
+INFO:cartography.client.core.tx:Loaded 2 AWSEC2SecurityGroup nodes
+INFO:cartography.client.core.tx:Loaded 2 AWSIpPermissionInbound nodes
+INFO:cartography.client.core.tx:Loaded 1 AWSIpRule nodes
+INFO:cartography.client.core.tx:Loaded 3 AWSIpRange nodes
+INFO:cartography.graph.statement:Completed AWSEC2SecurityGroup statement #1
+INFO:cartography.graph.statement:Completed AWSEC2SecurityGroup statement #2
+INFO:cartography.graph.statement:Completed AWSEC2SecurityGroup statement #3
+INFO:cartography.graph.statement:Completed AWSEC2SecurityGroup statement #4
+INFO:cartography.graph.statement:Completed AWSIpPermissionInbound statement #1
+INFO:cartography.graph.statement:Completed AWSIpPermissionInbound statement #2
+INFO:cartography.graph.statement:Completed AWSIpPermissionInbound statement #3
+INFO:cartography.graph.statement:Completed AWSIpRule statement #1
+INFO:cartography.graph.statement:Completed AWSIpRule statement #2
+INFO:cartography.graph.statement:Completed AWSIpRule statement #3
+INFO:cartography.graph.statement:Completed AWSIpRange statement #1
+INFO:cartography.graph.statement:Completed AWSIpRange statement #2
+INFO:cartography.graph.statement:Completed AWSIpRange statement #3
+INFO:cartography.graph.statement:Completed AWSEC2SecurityGroup statement #1
+INFO:cartography.graph.statement:Completed AWSEC2SecurityGroup statement #2
+INFO:cartography.graph.statement:Completed AWSEC2SecurityGroup statement #3
+INFO:cartography.util:Did not run EC2 Instances assume IAM roles because it needs {'iaminstanceprofiles', 'iam', 'ec2:instance'} to be included as a requested sync. You specified: {'iam', 's3', 'ec2:security_group'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
+INFO:cartography.util:Did not run Lambda functions with ECR images because it needs {'ecr', 'lambda_function'} to be included as a requested sync. You specified: {'iam', 's3', 'ec2:security_group'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
+INFO:cartography.graph.statement:Completed aws_post_ingestion_principals_cleanup statement #1
+INFO:cartography.graph.statement:Completed aws_ip_node_label_migration statement #1
+INFO:cartography.graph.statement:Completed aws_ip_node_label_migration statement #2
+INFO:cartography.graph.statement:Completed aws_ip_node_label_migration statement #3
+INFO:cartography.graph.statement:Completed aws_ip_node_label_migration statement #4
+INFO:cartography.graph.statement:Completed aws_ip_node_label_migration statement #5
+INFO:cartography.graph.statement:Completed aws_ip_node_label_migration statement #6
+INFO:cartography.util:Did not run AWS LoadBalancerV2 internet exposure because it needs {'ec2:load_balancer', 'ec2:instance', 'ec2:load_balancer_v2', 'ec2:security_group'} to be included as a requested sync. You specified: {'iam', 's3', 'ec2:security_group'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
+INFO:cartography.util:Did not run AWS LoadBalancer internet exposure because it needs {'ec2:load_balancer', 'ec2:instance', 'ec2:load_balancer_v2', 'ec2:security_group'} to be included as a requested sync. You specified: {'iam', 's3', 'ec2:security_group'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
+INFO:cartography.util:Did not run AWS EC2 instance internet exposure because it needs {'ec2:load_balancer', 'ec2:instance', 'ec2:load_balancer_v2', 'ec2:security_group'} to be included as a requested sync. You specified: {'iam', 's3', 'ec2:security_group'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
+INFO:cartography.util:Did not run AWS Auto Scaling group internet exposure because it needs {'ec2:autoscalinggroup', 'ec2:instance', 'ec2:security_group', 'ec2:load_balancer_v2', 'ec2:load_balancer'} to be included as a requested sync. You specified: {'iam', 's3', 'ec2:security_group'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
+INFO:cartography.util:Did not run Analysis jobs for EC2 Key Pairs properties because it needs {'ec2:keypair'} to be included as a requested sync. You specified: {'iam', 's3', 'ec2:security_group'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
+INFO:cartography.util:Did not run Analysis jobs for EC2 Key Pairs matching fingerprints because it needs {'ec2:keypair'} to be included as a requested sync. You specified: {'iam', 's3', 'ec2:security_group'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
+INFO:cartography.util:Did not run AWS EKS internet exposure because it needs {'eks'} to be included as a requested sync. You specified: {'iam', 's3', 'ec2:security_group'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
+INFO:cartography.graph.statement:Completed aws_foreign_accounts statement #1
+INFO:cartography.graph.statement:Completed aws_foreign_accounts statement #2
+INFO:cartography.util:Did not run AWS ECS internet exposure because it needs {'ec2:instance', 'ecs', 'ec2:security_group', 'ec2:load_balancer_v2', 'ec2:network_interface', 'ec2:load_balancer', 'ec2:load_balancer_v2:expose'} to be included as a requested sync. You specified: {'iam', 's3', 'ec2:security_group'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
+INFO:cartography.util:Did not run AWS LoadBalancer to ECS Container direct relationship because it needs {'ec2:instance', 'ecs', 'ec2:security_group', 'ec2:load_balancer_v2', 'ec2:network_interface', 'ec2:load_balancer', 'ec2:load_balancer_v2:expose'} to be included as a requested sync. You specified: {'iam', 's3', 'ec2:security_group'}. If you want this job to run, please change your CLI args/cartography config so that all required resources are included.
+INFO:cartography.sync:Finishing sync stage 'aws'
+INFO:cartography.sync:Finishing sync with update tag '1790509304'
